@@ -56,12 +56,12 @@
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
-  --red: #BC2C1A;
+  --red: #bc2c1a;
   --redb: #902214;
-  --blue: #2772A0;
-  --blueb: #1C5273;
-  --green: #009E60;
-  --yellow: #F5D000;
+  --blue: #2772a0;
+  --blueb: #1c5273;
+  --green: #009e60;
+  --yellow: #f5d000;
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
@@ -129,16 +129,18 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   * {
-    @apply border-border outline-ring/50;
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground font-mono;
-    @apply bg-background text-foreground;
   }
 
-  .fnconatiner {
+  .fncontainer {
     @apply container mx-auto max-w-7xl px-4;
   }
 }
