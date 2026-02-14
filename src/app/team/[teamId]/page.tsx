@@ -26,16 +26,16 @@ const MAX_MEMBERS = 5;
 const emptySrmMember = (): SrmMember => ({
   name: "",
   raNumber: "",
-  collegeId: "",
+  netId: "",
   dept: "",
-  contact: "",
+  contact: 0,
 });
 
 const emptyNonSrmMember = (): NonSrmMember => ({
   name: "",
   collegeId: "",
   collegeEmail: "",
-  contact: "",
+  contact: 0,
 });
 
 export default function TeamDashboardPage() {
@@ -72,8 +72,14 @@ export default function TeamDashboardPage() {
   const [updatedAt, setUpdatedAt] = useState("");
 
   const currentMembers = teamType === "srm" ? membersSrm : membersNonSrm;
+  const currentLeadId =
+    teamType === "srm" ? leadSrm.netId : leadNonSrm.collegeId;
   const memberCount = 1 + currentMembers.length;
   const canAddMember = memberCount < MAX_MEMBERS;
+  const getCurrentMemberId = (member: SrmMember | NonSrmMember) =>
+    teamType === "srm"
+      ? (member as SrmMember).netId
+      : (member as NonSrmMember).collegeId;
 
   const completedProfiles = useMemo(() => {
     if (teamType === "srm") {
@@ -356,7 +362,9 @@ export default function TeamDashboardPage() {
                   title="Team Lead"
                   member={leadSrm}
                   onChange={(field, value) =>
-                    setLeadSrm((prev) => ({ ...prev, [field]: value }))
+                    setLeadSrm(
+                      (prev) => ({ ...prev, [field]: value }) as SrmMember,
+                    )
                   }
                   className="mt-6"
                 />
@@ -364,7 +372,9 @@ export default function TeamDashboardPage() {
                   title="Member Draft"
                   member={draftSrm}
                   onChange={(field, value) =>
-                    setDraftSrm((prev) => ({ ...prev, [field]: value }))
+                    setDraftSrm(
+                      (prev) => ({ ...prev, [field]: value }) as SrmMember,
+                    )
                   }
                   className="mt-4"
                 />
@@ -375,7 +385,9 @@ export default function TeamDashboardPage() {
                   title="Team Lead"
                   member={leadNonSrm}
                   onChange={(field, value) =>
-                    setLeadNonSrm((prev) => ({ ...prev, [field]: value }))
+                    setLeadNonSrm(
+                      (prev) => ({ ...prev, [field]: value }) as NonSrmMember,
+                    )
                   }
                   className="mt-6"
                 />
@@ -383,7 +395,9 @@ export default function TeamDashboardPage() {
                   title="Member Draft"
                   member={draftNonSrm}
                   onChange={(field, value) =>
-                    setDraftNonSrm((prev) => ({ ...prev, [field]: value }))
+                    setDraftNonSrm(
+                      (prev) => ({ ...prev, [field]: value }) as NonSrmMember,
+                    )
                   }
                   className="mt-4"
                 />
@@ -400,7 +414,9 @@ export default function TeamDashboardPage() {
                     title="Edit Member"
                     member={editingSrm}
                     onChange={(field, value) =>
-                      setEditingSrm((prev) => ({ ...prev, [field]: value }))
+                      setEditingSrm(
+                        (prev) => ({ ...prev, [field]: value }) as SrmMember,
+                      )
                     }
                   />
                 ) : (
@@ -408,7 +424,9 @@ export default function TeamDashboardPage() {
                     title="Edit Member"
                     member={editingNonSrm}
                     onChange={(field, value) =>
-                      setEditingNonSrm((prev) => ({ ...prev, [field]: value }))
+                      setEditingNonSrm(
+                        (prev) => ({ ...prev, [field]: value }) as NonSrmMember,
+                      )
                     }
                   />
                 )}
@@ -494,7 +512,9 @@ export default function TeamDashboardPage() {
                     <tr className="border-b border-foreground/10 text-left">
                       <th className="py-2 pr-3">Role</th>
                       <th className="py-2 pr-3">Name</th>
-                      <th className="py-2 pr-3">ID</th>
+                      <th className="py-2 pr-3">
+                        {teamType === "srm" ? "NetID" : "College ID"}
+                      </th>
                       <th className="py-2 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -506,21 +526,19 @@ export default function TeamDashboardPage() {
                           ? leadSrm.name
                           : leadNonSrm.name) || "-"}
                       </td>
-                      <td className="py-2 pr-3">
-                        {(teamType === "srm"
-                          ? leadSrm.collegeId
-                          : leadNonSrm.collegeId) || "-"}
-                      </td>
+                      <td className="py-2 pr-3">{currentLeadId || "-"}</td>
                       <td className="py-2 text-right text-foreground/40">-</td>
                     </tr>
                     {currentMembers.map((member, idx) => (
                       <tr
-                        key={`${member.collegeId}-${idx}`}
+                        key={`${getCurrentMemberId(member)}-${idx}`}
                         className="border-b border-foreground/10"
                       >
                         <td className="py-2 pr-3">M{idx + 1}</td>
                         <td className="py-2 pr-3">{member.name}</td>
-                        <td className="py-2 pr-3">{member.collegeId}</td>
+                        <td className="py-2 pr-3">
+                          {getCurrentMemberId(member)}
+                        </td>
                         <td className="py-2 text-right space-x-1">
                           <FnButton
                             type="button"
@@ -617,7 +635,7 @@ const SrmEditor = ({
 }: {
   title: string;
   member: SrmMember;
-  onChange: (field: keyof SrmMember, value: string) => void;
+  onChange: (field: keyof SrmMember, value: string | number) => void;
   className?: string;
 }) => (
   <div
@@ -638,9 +656,9 @@ const SrmEditor = ({
         onChange={(v) => onChange("raNumber", v)}
       />
       <Input
-        label="College ID Number"
-        value={member.collegeId}
-        onChange={(v) => onChange("collegeId", v)}
+        label="NetID"
+        value={member.netId}
+        onChange={(v) => onChange("netId", v)}
       />
       <Input
         label="Department"
@@ -648,7 +666,7 @@ const SrmEditor = ({
         onChange={(v) => onChange("dept", v)}
       />
       <div className="md:col-span-2">
-        <Input
+        <NumberInput
           label="Contact"
           value={member.contact}
           onChange={(v) => onChange("contact", v)}
@@ -666,7 +684,7 @@ const NonSrmEditor = ({
 }: {
   title: string;
   member: NonSrmMember;
-  onChange: (field: keyof NonSrmMember, value: string) => void;
+  onChange: (field: keyof NonSrmMember, value: string | number) => void;
   className?: string;
 }) => (
   <div
@@ -691,11 +709,36 @@ const NonSrmEditor = ({
         value={member.collegeEmail}
         onChange={(v) => onChange("collegeEmail", v)}
       />
-      <Input
+      <NumberInput
         label="Contact"
         value={member.contact}
         onChange={(v) => onChange("contact", v)}
       />
     </div>
   </div>
+);
+
+type NumberInputProps = {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+};
+
+const NumberInput = ({ label, value, onChange }: NumberInputProps) => (
+  <label className="block">
+    <p className="text-xs uppercase tracking-[0.2em] text-foreground/70 font-semibold mb-1">
+      {label}
+    </p>
+    <input
+      type="tel"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={value === 0 ? "" : value}
+      onChange={(event) => {
+        const digits = event.target.value.replace(/\D/g, "");
+        onChange(digits ? Number(digits) : 0);
+      }}
+      className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-fnblue/50"
+    />
+  </label>
 );

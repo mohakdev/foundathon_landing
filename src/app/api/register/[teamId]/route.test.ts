@@ -15,7 +15,8 @@ const makeParams = (teamId: string) => ({
 
 describe("/api/register/[teamId] route", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    readTeamsMock.mockReset();
+    writeTeamsMock.mockReset();
   });
 
   it("GET returns team when id exists", async () => {
@@ -39,25 +40,25 @@ describe("/api/register/[teamId] route", () => {
       teamName: "Old Team",
       lead: {
         name: "Lead",
-        raNumber: "RA1",
-        collegeId: "ID1",
+        raNumber: "RA0000000000001",
+        netId: "od7270",
         dept: "CSE",
-        contact: "9999999999",
+        contact: 9999999999,
       },
       members: [
         {
           name: "M1",
-          raNumber: "RA2",
-          collegeId: "ID2",
+          raNumber: "RA0000000000002",
+          netId: "ab1234",
           dept: "CSE",
-          contact: "8888888888",
+          contact: 8888888888,
         },
         {
           name: "M2",
-          raNumber: "RA3",
-          collegeId: "ID3",
+          raNumber: "RA0000000000003",
+          netId: "cd5678",
           dept: "ECE",
-          contact: "7777777777",
+          contact: 7777777777,
         },
       ],
     };

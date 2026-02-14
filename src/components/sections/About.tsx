@@ -18,7 +18,7 @@ const problemHighlights = [
   {
     title: "PPT Submission Cap Rule",
     detail:
-      "When the configured cap of teams for a statement submits PPTs, that statement is disabled and no additional team can opt for it.",
+      "When a certain number of teams for a statement submits PPTs, that statement is disabled and no additional team can opt for it.",
   },
 ];
 

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { FnButton } from "@/components/ui/fn-button";
+import { LineShadowText } from "@/components/ui/line-shadow-text"
 
 const Header = () => {
   const navLinks = [
@@ -10,13 +12,17 @@ const Header = () => {
   ];
 
   return (
-    <div className="border-b border-foreground/10 shadow-sm p-4 font-semibold sticky top-0 z-50 bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="fncontainer flex items-center justify-between gap-6">
+    <div className="border-b border-foreground/10 shadow-sm p-4 font-semibold sticky top-0 z-50 bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/60">
+      <div className="fncontainer flex items-center justify-between gap-4">
+        <div className="absolute left-1 md:left-2 xl:left-3 2xl:left-5">
+          <Image src="/logo.svg" alt="alt" width={40} height={40} className="h-8 w-auto" />
+          </div>
         <Link
           href="/#overview"
-          className="text-2xl md:text-3xl font-mono tracking-tighter"
+          className="text-xl md:text-3xl ml-2 flex items-start gap-2 font-mono uppercase font-extrabold italic"
         >
-          Foundathon 3.0
+          <LineShadowText>Foundathon</LineShadowText>{""}
+          <LineShadowText>3.0</LineShadowText>
         </Link>
 
         <div className="flex flex-1 items-center justify-end gap-6">

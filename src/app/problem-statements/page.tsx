@@ -25,7 +25,7 @@ export default function ProblemStatementsPage() {
         style={{ backgroundImage: "url(/textures/circle-16px.svg)" }}
       />
       <div className="absolute -top-28 -right-16 size-96 rounded-full bg-fnblue/25 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-28 -left-16 size-[28rem] rounded-full bg-fnyellow/25 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-28 -left-16 size-112 rounded-full bg-fnyellow/25 blur-3xl pointer-events-none" />
 
       <div className="fncontainer relative py-16 md:py-24">
         <section className="relative overflow-hidden rounded-2xl border border-foreground/10 bg-background/95 p-8 md:p-10 text-foreground shadow-2xl border-b-4 border-fnblue backdrop-blur-sm">

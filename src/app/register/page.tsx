@@ -26,16 +26,16 @@ const MAX_MEMBERS = 5;
 const emptySrmMember = (): SrmMember => ({
   name: "",
   raNumber: "",
-  collegeId: "",
+  netId: "",
   dept: "",
-  contact: "",
+  contact: 0,
 });
 
 const emptyNonSrmMember = (): NonSrmMember => ({
   name: "",
   collegeId: "",
   collegeEmail: "",
-  contact: "",
+  contact: 0,
 });
 
 const emptyNonSrmMeta = (): NonSrmMeta => ({
@@ -68,7 +68,13 @@ const Register = () => {
 
   const currentMembers = teamType === "srm" ? membersSrm : membersNonSrm;
   const currentLead = teamType === "srm" ? leadSrm : leadNonSrm;
+  const currentLeadId =
+    teamType === "srm" ? leadSrm.netId : leadNonSrm.collegeId;
   const memberCount = 1 + currentMembers.length;
+  const getCurrentMemberId = (member: SrmMember | NonSrmMember) =>
+    teamType === "srm"
+      ? (member as SrmMember).netId
+      : (member as NonSrmMember).collegeId;
 
   const canAddMember = memberCount < MAX_MEMBERS;
   const canSubmit = memberCount >= MIN_MEMBERS && memberCount <= MAX_MEMBERS;
@@ -106,20 +112,28 @@ const Register = () => {
     loadTeams();
   }, [loadTeams]);
 
-  const updateSrmLead = (field: keyof SrmMember, value: string) => {
-    setLeadSrm((prev) => ({ ...prev, [field]: value }));
+  const updateSrmLead = (field: keyof SrmMember, value: string | number) => {
+    setLeadSrm((prev) => ({ ...prev, [field]: value }) as SrmMember);
   };
 
-  const updateSrmDraft = (field: keyof SrmMember, value: string) => {
-    setMemberDraftSrm((prev) => ({ ...prev, [field]: value }));
+  const updateSrmDraft = (field: keyof SrmMember, value: string | number) => {
+    setMemberDraftSrm((prev) => ({ ...prev, [field]: value }) as SrmMember);
   };
 
-  const updateNonSrmLead = (field: keyof NonSrmMember, value: string) => {
-    setLeadNonSrm((prev) => ({ ...prev, [field]: value }));
+  const updateNonSrmLead = (
+    field: keyof NonSrmMember,
+    value: string | number,
+  ) => {
+    setLeadNonSrm((prev) => ({ ...prev, [field]: value }) as NonSrmMember);
   };
 
-  const updateNonSrmDraft = (field: keyof NonSrmMember, value: string) => {
-    setMemberDraftNonSrm((prev) => ({ ...prev, [field]: value }));
+  const updateNonSrmDraft = (
+    field: keyof NonSrmMember,
+    value: string | number,
+  ) => {
+    setMemberDraftNonSrm(
+      (prev) => ({ ...prev, [field]: value }) as NonSrmMember,
+    );
   };
 
   const addMember = () => {
@@ -252,10 +266,10 @@ const Register = () => {
       />
       <div className="fncontainer relative py-10 md:py-14">
         <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="rounded-2xl border border-foreground/10 bg-background/95 p-6 md:p-8 shadow-lg border-b-4 border-fnblue backdrop-blur-sm">
+          <section className="rounded-2xl border bg-background/95 p-6 md:p-8 shadow-lg border-b-4 border-fnblue backdrop-blur-sm">
             <div className="space-y-4">
-              <p className="inline-flex rounded-full border-2 border-fngreen bg-fngreen/20 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-fngreen">
-                Foundathon Registration
+              <p className="inline-flex rounded-full border-2 border-fngreen bg-fngreen/20 px-3 text-sm font-bold uppercase tracking-[0.2em] text-fngreen">
+                Foundathon 3.0 Registration
               </p>
               <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight">
                 onboarding wizard
@@ -307,7 +321,7 @@ const Register = () => {
               </div>
             )}
 
-            <div className="mt-6 rounded-xl border border-foreground/10 bg-gradient-to-b from-gray-100 to-gray-50 p-4 shadow-sm">
+            <div className="mt-6 rounded-xl border border-foreground/10 bg-linear-to-b from-gray-100 to-gray-50 p-4 shadow-sm">
               <p className="text-xs uppercase tracking-[0.22em] text-foreground/70 font-semibold mb-3">
                 Team Type
               </p>
@@ -340,7 +354,7 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="mt-6 rounded-xl border border-foreground/10 bg-gradient-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm">
+            <div className="mt-6 rounded-xl border border-foreground/10 bg-linear-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm">
               <p className="text-sm md:text-base font-bold uppercase tracking-[0.08em] mb-3 text-fnblue">
                 Team Identity
               </p>
@@ -352,7 +366,7 @@ const Register = () => {
             </div>
 
             {teamType === "non_srm" && (
-              <div className="mt-6 rounded-xl border border-foreground/10 bg-gradient-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm">
+              <div className="mt-6 rounded-xl border border-foreground/10 bg-linear-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm">
                 <p className="text-sm md:text-base font-bold uppercase tracking-[0.08em] mb-3 text-fnblue">
                   Non-SRM Team Info
                 </p>
@@ -452,7 +466,7 @@ const Register = () => {
           </section>
 
           <aside className="space-y-4 lg:sticky lg:top-24 self-start h-[calc(100vh-7rem)] overflow-y-auto pr-1">
-            <div className="rounded-2xl border border-foreground/10 bg-background/95 p-6 shadow-md border-b-4 border-fnyellow backdrop-blur-sm">
+            <div className="rounded-2xl border bg-background/95 p-6 shadow-md border-b-4 border-fnyellow backdrop-blur-sm">
               <p className="text-xs uppercase tracking-[0.22em] text-foreground/70 font-semibold">
                 Team Status
               </p>
@@ -460,14 +474,25 @@ const Register = () => {
                 live progress
               </h3>
               <div className="mt-4 space-y-3">
-                <StatusLine
-                  label="Team Type"
-                  value={teamType === "srm" ? "SRM" : "Non-SRM"}
-                  tone="blue"
-                />
+                <div className="rounded-lg border border-foreground/20 bg-linear-to-r from-foreground/8 to-foreground/4 p-3 flex justify-between items-center">
+                  <p className="text-[10px] uppercase text-foreground/80 tracking-[0.18em] font-semibold">
+                    Team Type
+                  </p>
+                  <div>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.14em] ${
+                        teamType === "srm"
+                          ? "border-fnblue/50 bg-fnblue/20 text-fnblue"
+                          : "border-fnred/50 bg-fnred/20 text-fnred"
+                      }`}
+                    >
+                      {teamType === "srm" ? "SRM Squad" : "Non-SRM Squad"}
+                    </span>
+                  </div>
+                </div>
                 <StatusLine
                   label="Team Name"
-                  value={teamName || "-"}
+                  value={teamName || "Unnamed Team"}
                   tone="blue"
                 />
                 <StatusLine
@@ -488,7 +513,7 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-foreground/10 bg-background/95 p-6 shadow-md border-b-4 border-fnblue backdrop-blur-sm">
+            <div className="rounded-2xl border bg-background/95 p-6 shadow-md border-b-4 border-fnblue backdrop-blur-sm">
               <p className="text-xs uppercase tracking-[0.22em] text-foreground/70 font-semibold">
                 Live Team Members
               </p>
@@ -507,7 +532,7 @@ const Register = () => {
                         Name
                       </th>
                       <th className="py-2 pr-3 font-semibold uppercase tracking-[0.12em] text-xs">
-                        ID
+                        {teamType === "srm" ? "NetID" : "College ID"}
                       </th>
                       <th className="py-2 font-semibold uppercase tracking-[0.12em] text-xs">
                         Contact
@@ -521,9 +546,7 @@ const Register = () => {
                     <tr className="border-b border-foreground/10">
                       <td className="py-2 pr-3 font-bold text-fnblue">Lead</td>
                       <td className="py-2 pr-3">{currentLead.name || "-"}</td>
-                      <td className="py-2 pr-3">
-                        {currentLead.collegeId || "-"}
-                      </td>
+                      <td className="py-2 pr-3">{currentLeadId || "-"}</td>
                       <td className="py-2">{currentLead.contact || "-"}</td>
                       <td className="py-2 pl-2 text-right text-foreground/40">
                         -
@@ -531,14 +554,16 @@ const Register = () => {
                     </tr>
                     {currentMembers.map((member, index) => (
                       <tr
-                        key={`${member.collegeId}-${index}`}
+                        key={`${getCurrentMemberId(member)}-${index}`}
                         className="border-b border-foreground/10"
                       >
                         <td className="py-2 pr-3 font-semibold">
                           M{index + 1}
                         </td>
                         <td className="py-2 pr-3">{member.name}</td>
-                        <td className="py-2 pr-3">{member.collegeId}</td>
+                        <td className="py-2 pr-3">
+                          {getCurrentMemberId(member)}
+                        </td>
                         <td className="py-2">{member.contact}</td>
                         <td className="py-2 pl-2 text-right">
                           <FnButton
@@ -567,7 +592,7 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-foreground/10 bg-background/95 p-6 shadow-md border-b-4 border-fnred backdrop-blur-sm">
+            <div className="rounded-2xl border bg-background/95 p-6 shadow-md border-b-4 border-fnred backdrop-blur-sm">
               <p className="text-xs uppercase tracking-[0.22em] text-foreground/70 font-semibold">
                 Saved Teams (JSON)
               </p>
@@ -620,8 +645,8 @@ const MemberDraftCard = ({
   count: number;
   children: React.ReactNode;
 }) => (
-  <div className="mt-6 rounded-xl border border-foreground/10 bg-gradient-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm">
-    <div className="flex items-center justify-between gap-3 mb-3">
+  <div className="mt-6 rounded-xl border border-foreground/10 bg-linear-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm">
+    <div className="flex items-center justify-between gap-3 mb-3 h-13">
       <p className="text-base font-bold uppercase tracking-[0.08em]">
         Add Member Individually
       </p>
@@ -664,7 +689,7 @@ const Input = ({ label, value, onChange }: InputProps) => (
 type SrmEditorProps = {
   title: string;
   member: SrmMember;
-  onChange: (field: keyof SrmMember, value: string) => void;
+  onChange: (field: keyof SrmMember, value: string | number) => void;
   className?: string;
 };
 
@@ -675,7 +700,7 @@ const SrmMemberEditor = ({
   className = "",
 }: SrmEditorProps) => (
   <div
-    className={`rounded-xl border border-foreground/10 bg-gradient-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm ${className}`}
+    className={`rounded-xl border border-foreground/10 bg-linear-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm ${className}`}
   >
     <p className="text-sm md:text-base font-bold uppercase tracking-[0.08em] mb-3">
       {title}
@@ -692,9 +717,9 @@ const SrmMemberEditor = ({
         onChange={(v) => onChange("raNumber", v)}
       />
       <Input
-        label="College ID Number"
-        value={member.collegeId}
-        onChange={(v) => onChange("collegeId", v)}
+        label="NetID"
+        value={member.netId}
+        onChange={(v) => onChange("netId", v)}
       />
       <Input
         label="Department"
@@ -702,7 +727,7 @@ const SrmMemberEditor = ({
         onChange={(v) => onChange("dept", v)}
       />
       <div className="md:col-span-2">
-        <Input
+        <NumberInput
           label="Contact"
           value={member.contact}
           onChange={(v) => onChange("contact", v)}
@@ -715,7 +740,7 @@ const SrmMemberEditor = ({
 type NonSrmEditorProps = {
   title: string;
   member: NonSrmMember;
-  onChange: (field: keyof NonSrmMember, value: string) => void;
+  onChange: (field: keyof NonSrmMember, value: string | number) => void;
   className?: string;
 };
 
@@ -726,7 +751,7 @@ const NonSrmMemberEditor = ({
   className = "",
 }: NonSrmEditorProps) => (
   <div
-    className={`rounded-xl border border-foreground/10 bg-gradient-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm ${className}`}
+    className={`rounded-xl border border-foreground/10 bg-linear-to-b from-gray-100 to-gray-50 p-4 md:p-5 shadow-sm ${className}`}
   >
     <p className="text-sm md:text-base font-bold uppercase tracking-[0.08em] mb-3">
       {title}
@@ -747,13 +772,38 @@ const NonSrmMemberEditor = ({
         value={member.collegeEmail}
         onChange={(v) => onChange("collegeEmail", v)}
       />
-      <Input
+      <NumberInput
         label="Contact"
         value={member.contact}
         onChange={(v) => onChange("contact", v)}
       />
     </div>
   </div>
+);
+
+type NumberInputProps = {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+};
+
+const NumberInput = ({ label, value, onChange }: NumberInputProps) => (
+  <label className="block">
+    <p className="text-xs uppercase tracking-[0.2em] text-foreground/70 font-semibold mb-1">
+      {label}
+    </p>
+    <input
+      type="tel"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={value === 0 ? "" : value}
+      onChange={(event) => {
+        const digits = event.target.value.replace(/\D/g, "");
+        onChange(digits ? Number(digits) : 0);
+      }}
+      className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-fnblue/50"
+    />
+  </label>
 );
 
 const StatusLine = ({
@@ -768,7 +818,7 @@ const StatusLine = ({
   const toneClass = {
     blue: "border-fnblue/35 bg-fnblue/10 text-fnblue",
     green: "border-fngreen/35 bg-fngreen/10 text-fngreen",
-    yellow: "border-fnyellow/45 bg-fnyellow/20 text-foreground",
+    yellow: "border-fnyellow/45 bg-fnyellow/20 text-fnyellow",
     red: "border-fnred/35 bg-fnred/10 text-fnred",
   }[tone];
 

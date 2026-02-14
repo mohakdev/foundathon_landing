@@ -1,18 +1,46 @@
 import { z } from "zod";
 
+const contactNumberSchema = z
+  .number()
+  .int("Contact must be a whole number.")
+  .min(1_000_000_000, "Valid contact is required.")
+  .max(9_999_999_999, "Contact must be 10 digits (without 0 and +91).");
+
 export const srmMemberSchema = z.object({
-  name: z.string().trim().min(2, "Name is required."),
-  raNumber: z.string().trim().min(2, "RA Number is required."),
-  collegeId: z.string().trim().min(2, "College ID Number is required."),
-  dept: z.string().trim().min(2, "Department is required."),
-  contact: z.string().trim().min(8, "Valid contact is required."),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name is required.")
+    .max(50, "Name is too long."),
+  raNumber: z
+    .string()
+    .trim()
+    .regex(/^RA\d{13}$/, {
+      message: "RA Number must start with RA followed by digits.",
+    })
+    .max(15, "RA Number is too long,"),
+  netId: z
+    .string()
+    .trim()
+    .regex(/^[a-z]{2}[0-9]{4}$/, {
+      message:
+        "NetID must be 2 lowercase letters followed by 4 digits (e.g., od7270)",
+    })
+    .min(6, "NetID must be 6 characters long.")
+    .max(6, "NetID must be 6 characters long."),
+  dept: z.string().trim().min(2, "Department is required."), // TODO: Maybe add a dropdown with common departments?
+  contact: contactNumberSchema,
 });
 
 export const nonSrmMemberSchema = z.object({
-  name: z.string().trim().min(2, "Name is required."),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name is required.")
+    .max(50, "Name is too long."),
   collegeId: z.string().trim().min(2, "College ID Number is required."),
-  collegeEmail: z.string().trim().email("Valid college email is required."),
-  contact: z.string().trim().min(8, "Valid contact is required."),
+  collegeEmail: z.email("Valid college email is required."),
+  contact: contactNumberSchema,
 });
 
 export const srmTeamSubmissionSchema = z.object({

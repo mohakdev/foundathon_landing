@@ -37,23 +37,23 @@ describe.sequential("register-store", () => {
           teamType: "srm",
           lead: {
             name: "Lead",
-            raNumber: "RA1",
-            collegeId: "ID1",
+            raNumber: "RA0000000000001",
+            collegeId: "od7270",
             dept: "CSE",
             contact: "9999999999",
           },
           members: [
             {
               name: "M1",
-              raNumber: "RA2",
-              collegeId: "ID2",
+              raNumber: "RA0000000000002",
+              collegeId: "ab1234",
               dept: "CSE",
               contact: "8888888888",
             },
             {
               name: "M2",
-              raNumber: "RA3",
-              collegeId: "ID3",
+              raNumber: "RA0000000000003",
+              collegeId: "cd5678",
               dept: "ECE",
               contact: "7777777777",
             },
@@ -68,5 +68,8 @@ describe.sequential("register-store", () => {
 
     expect(teams).toHaveLength(1);
     expect(teams[0]?.teamName).toBe("SRM Team");
+    expect(teams[0]?.lead.netId).toBe("od7270");
+    expect(teams[0]?.members[0]?.netId).toBe("ab1234");
+    expect(teams[0]?.lead.contact).toBe(9999999999);
   });
 });
