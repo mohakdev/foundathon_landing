@@ -5,14 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FnButton } from "@/components/ui/fn-button";
 import { toast } from "@/hooks/use-toast";
-import {
-  type NonSrmMember,
-  nonSrmMemberSchema,
-  type SrmMember,
-  srmMemberSchema,
-  type TeamRecord,
-  teamSubmissionSchema,
-} from "@/lib/register-schema";
+import { type NonSrmMember, nonSrmMemberSchema, type SrmMember, srmMemberSchema, type TeamRecord, teamSubmissionSchema } from "@/lib/register-schema";
 import { PlusIcon, Trash2, UserRoundPen } from "lucide-react";
 
 type TeamType = "srm" | "non_srm";
@@ -53,12 +46,10 @@ export default function TeamDashboardPage() {
 
   const [leadNonSrm, setLeadNonSrm] = useState<NonSrmMember>(emptyNonSrmMember);
   const [membersNonSrm, setMembersNonSrm] = useState<NonSrmMember[]>([]);
-  const [draftNonSrm, setDraftNonSrm] =
-    useState<NonSrmMember>(emptyNonSrmMember);
+  const [draftNonSrm, setDraftNonSrm] = useState<NonSrmMember>(emptyNonSrmMember);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingSrm, setEditingSrm] = useState<SrmMember>(emptySrmMember);
-  const [editingNonSrm, setEditingNonSrm] =
-    useState<NonSrmMember>(emptyNonSrmMember);
+  const [editingNonSrm, setEditingNonSrm] = useState<NonSrmMember>(emptyNonSrmMember);
   const [metaNonSrm, setMetaNonSrm] = useState<NonSrmMeta>({
     collegeName: "",
     isClub: false,
@@ -72,30 +63,19 @@ export default function TeamDashboardPage() {
   const [updatedAt, setUpdatedAt] = useState("");
 
   const currentMembers = teamType === "srm" ? membersSrm : membersNonSrm;
-  const currentLeadId =
-    teamType === "srm" ? leadSrm.netId : leadNonSrm.collegeId;
+  const currentLeadId = teamType === "srm" ? leadSrm.netId : leadNonSrm.collegeId;
   const memberCount = 1 + currentMembers.length;
   const canAddMember = memberCount < MAX_MEMBERS;
   const getCurrentMemberId = (member: SrmMember | NonSrmMember) =>
-    teamType === "srm"
-      ? (member as SrmMember).netId
-      : (member as NonSrmMember).collegeId;
+    teamType === "srm" ? (member as SrmMember).netId : (member as NonSrmMember).collegeId;
 
   const completedProfiles = useMemo(() => {
     if (teamType === "srm") {
       const leadOk = srmMemberSchema.safeParse(leadSrm).success ? 1 : 0;
-      return (
-        leadOk +
-        membersSrm.filter((item) => srmMemberSchema.safeParse(item).success)
-          .length
-      );
+      return leadOk + membersSrm.filter((item) => srmMemberSchema.safeParse(item).success).length;
     }
     const leadOk = nonSrmMemberSchema.safeParse(leadNonSrm).success ? 1 : 0;
-    return (
-      leadOk +
-      membersNonSrm.filter((item) => nonSrmMemberSchema.safeParse(item).success)
-        .length
-    );
+    return leadOk + membersNonSrm.filter((item) => nonSrmMemberSchema.safeParse(item).success).length;
   }, [leadNonSrm, leadSrm, membersNonSrm, membersSrm, teamType]);
 
   useEffect(() => {
@@ -158,8 +138,7 @@ export default function TeamDashboardPage() {
       if (!parsed.success) {
         toast({
           title: "Validation Error",
-          description:
-            parsed.error.issues[0]?.message ?? "Invalid member data.",
+          description: parsed.error.issues[0]?.message ?? "Invalid member data.",
           variant: "destructive",
         });
         return;
@@ -223,29 +202,23 @@ export default function TeamDashboardPage() {
       if (!parsed.success) {
         toast({
           title: "Validation Error",
-          description:
-            parsed.error.issues[0]?.message ?? "Invalid member data.",
+          description: parsed.error.issues[0]?.message ?? "Invalid member data.",
           variant: "destructive",
         });
         return;
       }
-      setMembersSrm((prev) =>
-        prev.map((item, idx) => (idx === editingIndex ? parsed.data : item)),
-      );
+      setMembersSrm((prev) => prev.map((item, idx) => (idx === editingIndex ? parsed.data : item)));
     } else {
       const parsed = nonSrmMemberSchema.safeParse(editingNonSrm);
       if (!parsed.success) {
         toast({
           title: "Validation Error",
-          description:
-            parsed.error.issues[0]?.message ?? "Invalid member data.",
+          description: parsed.error.issues[0]?.message ?? "Invalid member data.",
           variant: "destructive",
         });
         return;
       }
-      setMembersNonSrm((prev) =>
-        prev.map((item, idx) => (idx === editingIndex ? parsed.data : item)),
-      );
+      setMembersNonSrm((prev) => prev.map((item, idx) => (idx === editingIndex ? parsed.data : item)));
     }
 
     toast({
@@ -353,30 +326,18 @@ export default function TeamDashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-200 text-foreground relative overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-45 pointer-events-none"
-        style={{ backgroundImage: "url(/textures/circle-16px.svg)" }}
-      />
+      <div className="absolute inset-0 opacity-45 pointer-events-none" style={{ backgroundImage: "url(/textures/circle-16px.svg)" }} />
       <div className="fncontainer relative py-10 md:py-14">
         <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
           <section className="rounded-2xl border bg-background/95 p-6 md:p-8 shadow-lg border-b-4 border-fnblue">
             <p className="inline-flex rounded-full border-2 border-fnblue bg-fnblue/10 px-3 text-sm font-bold uppercase tracking-[0.2em] text-fnblue">
               Team Dashboard
             </p>
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight mt-4">
-              manage team members
-            </h1>
-            <p className="text-foreground/70 mt-2">
-              Update lead details, add/remove members, and save directly to the
-              JSON record.
-            </p>
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight mt-4">manage team members</h1>
+            <p className="text-foreground/70 mt-2">Update lead details, add/remove members, and save directly to the JSON record.</p>
 
             <div className="mt-6 rounded-xl border border-foreground/10 bg-gray-100 p-4">
-              <Input
-                label="Team Name"
-                value={teamName}
-                onChange={setTeamName}
-              />
+              <Input label="Team Name" value={teamName} onChange={setTeamName} />
             </div>
 
             {teamType === "non_srm" && (
@@ -385,9 +346,7 @@ export default function TeamDashboardPage() {
                   <Input
                     label="College Name"
                     value={metaNonSrm.collegeName}
-                    onChange={(v) =>
-                      setMetaNonSrm((prev) => ({ ...prev, collegeName: v }))
-                    }
+                    onChange={(v) => setMetaNonSrm((prev) => ({ ...prev, collegeName: v }))}
                   />
                 </div>
                 <label className="mt-3 inline-flex items-center gap-2 text-sm font-semibold">
@@ -405,13 +364,7 @@ export default function TeamDashboardPage() {
                   Team represents a club
                 </label>
                 <div className="mt-3">
-                  <Input
-                    label="Club Name"
-                    value={metaNonSrm.clubName}
-                    onChange={(v) =>
-                      setMetaNonSrm((prev) => ({ ...prev, clubName: v }))
-                    }
-                  />
+                  <Input label="Club Name" value={metaNonSrm.clubName} onChange={(v) => setMetaNonSrm((prev) => ({ ...prev, clubName: v }))} />
                 </div>
               </div>
             )}
@@ -421,21 +374,13 @@ export default function TeamDashboardPage() {
                 <SrmEditor
                   title="Team Lead"
                   member={leadSrm}
-                  onChange={(field, value) =>
-                    setLeadSrm(
-                      (prev) => ({ ...prev, [field]: value }) as SrmMember,
-                    )
-                  }
+                  onChange={(field, value) => setLeadSrm((prev) => ({ ...prev, [field]: value }) as SrmMember)}
                   className="mt-6"
                 />
                 <SrmEditor
                   title="Member Draft"
                   member={draftSrm}
-                  onChange={(field, value) =>
-                    setDraftSrm(
-                      (prev) => ({ ...prev, [field]: value }) as SrmMember,
-                    )
-                  }
+                  onChange={(field, value) => setDraftSrm((prev) => ({ ...prev, [field]: value }) as SrmMember)}
                   className="mt-4"
                 />
               </>
@@ -444,21 +389,13 @@ export default function TeamDashboardPage() {
                 <NonSrmEditor
                   title="Team Lead"
                   member={leadNonSrm}
-                  onChange={(field, value) =>
-                    setLeadNonSrm(
-                      (prev) => ({ ...prev, [field]: value }) as NonSrmMember,
-                    )
-                  }
+                  onChange={(field, value) => setLeadNonSrm((prev) => ({ ...prev, [field]: value }) as NonSrmMember)}
                   className="mt-6"
                 />
                 <NonSrmEditor
                   title="Member Draft"
                   member={draftNonSrm}
-                  onChange={(field, value) =>
-                    setDraftNonSrm(
-                      (prev) => ({ ...prev, [field]: value }) as NonSrmMember,
-                    )
-                  }
+                  onChange={(field, value) => setDraftNonSrm((prev) => ({ ...prev, [field]: value }) as NonSrmMember)}
                   className="mt-4"
                 />
               </>
@@ -466,40 +403,25 @@ export default function TeamDashboardPage() {
 
             {editingIndex !== null && (
               <div className="mt-4 rounded-xl border border-fnyellow/50 bg-fnyellow/20 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] font-bold text-foreground/80 mb-2">
-                  Editing Member {editingIndex + 1}
-                </p>
+                <p className="text-xs uppercase tracking-[0.2em] font-bold text-foreground/80 mb-2">Editing Member {editingIndex + 1}</p>
                 {teamType === "srm" ? (
                   <SrmEditor
                     title="Edit Member"
                     member={editingSrm}
-                    onChange={(field, value) =>
-                      setEditingSrm(
-                        (prev) => ({ ...prev, [field]: value }) as SrmMember,
-                      )
-                    }
+                    onChange={(field, value) => setEditingSrm((prev) => ({ ...prev, [field]: value }) as SrmMember)}
                   />
                 ) : (
                   <NonSrmEditor
                     title="Edit Member"
                     member={editingNonSrm}
-                    onChange={(field, value) =>
-                      setEditingNonSrm(
-                        (prev) => ({ ...prev, [field]: value }) as NonSrmMember,
-                      )
-                    }
+                    onChange={(field, value) => setEditingNonSrm((prev) => ({ ...prev, [field]: value }) as NonSrmMember)}
                   />
                 )}
                 <div className="mt-3 flex gap-2">
                   <FnButton type="button" onClick={saveEditMember} size="sm">
                     Save Member Update
                   </FnButton>
-                  <FnButton
-                    type="button"
-                    onClick={cancelEditMember}
-                    tone="gray"
-                    size="sm"
-                  >
+                  <FnButton type="button" onClick={cancelEditMember} tone="gray" size="sm">
                     Cancel
                   </FnButton>
                 </div>
@@ -507,23 +429,14 @@ export default function TeamDashboardPage() {
             )}
 
             <div className="mt-4 flex flex-wrap gap-3">
-              <FnButton
-                type="button"
-                onClick={addMember}
-                disabled={!canAddMember}
-                tone="green"
-              >
+              <FnButton type="button" onClick={addMember} disabled={!canAddMember} tone="green">
                 <PlusIcon size={16} strokeWidth={3} />
                 Add Member
               </FnButton>
               <FnButton type="button" onClick={saveChanges} disabled={isSaving}>
                 {isSaving ? "Saving..." : "Save Changes"}
               </FnButton>
-              <FnButton
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                tone="red"
-              >
+              <FnButton type="button" onClick={() => setShowDeleteConfirm(true)} tone="red">
                 <Trash2 size={16} strokeWidth={3} />
                 Delete Team
               </FnButton>
@@ -532,84 +445,49 @@ export default function TeamDashboardPage() {
 
           <aside className="space-y-4 self-start pr-1">
             <div className="rounded-2xl border bg-background/95 p-6 shadow-md border-b-4 border-fnyellow">
-              <p className="text-xs uppercase tracking-[0.2em] font-semibold text-foreground/70">
-                Team Snapshot
-              </p>
+              <p className="text-xs uppercase tracking-[0.2em] font-semibold text-foreground/70">Team Snapshot</p>
               <p className="mt-3 text-sm font-semibold">Team: {teamName}</p>
-              <p className="text-sm font-semibold">
-                Type: {teamType === "srm" ? "SRM Team" : "Non-SRM Team"}
-              </p>
+              <p className="text-sm font-semibold">Type: {teamType === "srm" ? "SRM Team" : "Non-SRM Team"}</p>
               {teamType === "non_srm" && (
-                <p className="text-sm font-semibold">
-                  Club:{" "}
-                  {metaNonSrm.isClub
-                    ? metaNonSrm.clubName || "Club team"
-                    : "Independent Team"}
-                </p>
+                <p className="text-sm font-semibold">Club: {metaNonSrm.isClub ? metaNonSrm.clubName || "Club team" : "Independent Team"}</p>
               )}
               <p className="text-sm font-semibold">Members: {memberCount}/5</p>
               <p className="text-sm font-semibold">
                 Completed Profiles: {completedProfiles}/{memberCount}
               </p>
-              <p className="text-xs text-foreground/70 mt-3">
-                Created: {new Date(createdAt).toLocaleString()}
-              </p>
-              <p className="text-xs text-foreground/70">
-                Updated: {new Date(updatedAt).toLocaleString()}
-              </p>
+              <p className="text-xs text-foreground/70 mt-3">Created: {new Date(createdAt).toLocaleString()}</p>
+              <p className="text-xs text-foreground/70">Updated: {new Date(updatedAt).toLocaleString()}</p>
             </div>
 
             <div className="rounded-2xl border bg-background/95 p-6 shadow-md border-b-4 border-fnblue">
-              <p className="text-xs uppercase tracking-[0.2em] font-semibold text-foreground/70">
-                Members Table
-              </p>
+              <p className="text-xs uppercase tracking-[0.2em] font-semibold text-foreground/70">Members Table</p>
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-foreground/10 text-left">
                       <th className="py-2 pr-3">Role</th>
                       <th className="py-2 pr-3">Name</th>
-                      <th className="py-2 pr-3">
-                        {teamType === "srm" ? "NetID" : "College ID"}
-                      </th>
+                      <th className="py-2 pr-3">{teamType === "srm" ? "NetID" : "College ID"}</th>
                       <th className="py-2 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b border-foreground/10">
                       <td className="py-2 pr-3 font-bold text-fnblue">Lead</td>
-                      <td className="py-2 pr-3">
-                        {(teamType === "srm"
-                          ? leadSrm.name
-                          : leadNonSrm.name) || "-"}
-                      </td>
+                      <td className="py-2 pr-3">{(teamType === "srm" ? leadSrm.name : leadNonSrm.name) || "-"}</td>
                       <td className="py-2 pr-3">{currentLeadId || "-"}</td>
                       <td className="py-2 text-right text-foreground/40">-</td>
                     </tr>
                     {currentMembers.map((member, idx) => (
-                      <tr
-                        key={`${getCurrentMemberId(member)}-${idx}`}
-                        className="border-b border-foreground/10"
-                      >
+                      <tr key={`${getCurrentMemberId(member)}-${idx}`} className="border-b border-foreground/10">
                         <td className="py-2 pr-3">M{idx + 1}</td>
                         <td className="py-2 pr-3">{member.name}</td>
-                        <td className="py-2 pr-3">
-                          {getCurrentMemberId(member)}
-                        </td>
+                        <td className="py-2 pr-3">{getCurrentMemberId(member)}</td>
                         <td className="py-2 text-right space-x-1">
-                          <FnButton
-                            type="button"
-                            onClick={() => beginEditMember(idx)}
-                            size="xs"
-                          >
+                          <FnButton type="button" onClick={() => beginEditMember(idx)} size="xs">
                             <UserRoundPen size={16} strokeWidth={3} />
                           </FnButton>
-                          <FnButton
-                            type="button"
-                            onClick={() => removeMember(idx)}
-                            tone="red"
-                            size="xs"
-                          >
+                          <FnButton type="button" onClick={() => removeMember(idx)} tone="red" size="xs">
                             <Trash2 size={16} strokeWidth={3} />
                           </FnButton>
                         </td>
@@ -635,23 +513,12 @@ export default function TeamDashboardPage() {
           aria-labelledby="delete-team-title"
         >
           <div className="w-full max-w-md rounded-2xl border bg-background p-6 shadow-2xl border-b-4 border-fnred">
-            <p
-              id="delete-team-title"
-              className="text-sm uppercase tracking-[0.18em] font-bold text-fnred"
-            >
+            <p id="delete-team-title" className="text-sm uppercase tracking-[0.18em] font-bold text-fnred">
               Confirm Team Deletion
             </p>
-            <p className="mt-3 text-sm text-foreground/80">
-              This action permanently removes the team record and cannot be
-              undone.
-            </p>
+            <p className="mt-3 text-sm text-foreground/80">This action permanently removes the team record and cannot be undone.</p>
             <div className="mt-6 flex justify-end gap-2">
-              <FnButton
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                tone="gray"
-                size="sm"
-              >
+              <FnButton type="button" onClick={() => setShowDeleteConfirm(false)} tone="gray" size="sm">
                 Cancel
               </FnButton>
               <FnButton type="button" onClick={deleteTeam} tone="red" size="sm">
@@ -670,16 +537,24 @@ type InputProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
 };
 
-const Input = ({ label, value, onChange }: InputProps) => (
+const Input = ({ label, value, onChange, type = "text", required = false, minLength, maxLength, pattern }: InputProps) => (
   <label className="block">
-    <p className="text-xs uppercase tracking-[0.2em] text-foreground/70 font-semibold mb-1">
-      {label}
-    </p>
+    <p className="text-xs uppercase tracking-[0.2em] text-foreground/70 font-semibold mb-1">{label}</p>
     <input
+      type={type}
       value={value}
       onChange={(event) => onChange(event.target.value)}
+      required={required}
+      minLength={minLength}
+      maxLength={maxLength}
+      pattern={pattern}
       className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-fnblue/50"
     />
   </label>
@@ -696,39 +571,15 @@ const SrmEditor = ({
   onChange: (field: keyof SrmMember, value: string | number) => void;
   className?: string;
 }) => (
-  <div
-    className={`rounded-xl border border-foreground/10 bg-gray-100 p-4 ${className}`}
-  >
-    <p className="text-sm font-bold uppercase tracking-[0.08em] mb-3">
-      {title}
-    </p>
+  <div className={`rounded-xl border border-foreground/10 bg-gray-100 p-4 ${className}`}>
+    <p className="text-sm font-bold uppercase tracking-[0.08em] mb-3">{title}</p>
     <div className="grid gap-3 md:grid-cols-2">
-      <Input
-        label="Name"
-        value={member.name}
-        onChange={(v) => onChange("name", v)}
-      />
-      <Input
-        label="RA Number"
-        value={member.raNumber}
-        onChange={(v) => onChange("raNumber", v)}
-      />
-      <Input
-        label="NetID"
-        value={member.netId}
-        onChange={(v) => onChange("netId", v)}
-      />
-      <Input
-        label="Department"
-        value={member.dept}
-        onChange={(v) => onChange("dept", v)}
-      />
+      <Input label="Name" value={member.name} onChange={(v) => onChange("name", v)} required minLength={2} maxLength={100} />
+      <Input label="RA Number" value={member.raNumber} onChange={(v) => onChange("raNumber", v)} required minLength={3} maxLength={50} />
+      <Input label="NetID" value={member.netId} onChange={(v) => onChange("netId", v)} required minLength={3} maxLength={50} />
+      <Input label="Department" value={member.dept} onChange={(v) => onChange("dept", v)} required minLength={2} maxLength={50} />
       <div className="md:col-span-2">
-        <NumberInput
-          label="Contact"
-          value={member.contact}
-          onChange={(v) => onChange("contact", v)}
-        />
+        <NumberInput label="Contact" value={member.contact} onChange={(v) => onChange("contact", v)} />
       </div>
     </div>
   </div>
@@ -745,33 +596,13 @@ const NonSrmEditor = ({
   onChange: (field: keyof NonSrmMember, value: string | number) => void;
   className?: string;
 }) => (
-  <div
-    className={`rounded-xl border border-foreground/10 bg-gray-100 p-4 ${className}`}
-  >
-    <p className="text-sm font-bold uppercase tracking-[0.08em] mb-3">
-      {title}
-    </p>
+  <div className={`rounded-xl border border-foreground/10 bg-gray-100 p-4 ${className}`}>
+    <p className="text-sm font-bold uppercase tracking-[0.08em] mb-3">{title}</p>
     <div className="grid gap-3 md:grid-cols-2">
-      <Input
-        label="Name"
-        value={member.name}
-        onChange={(v) => onChange("name", v)}
-      />
-      <Input
-        label="College ID Number"
-        value={member.collegeId}
-        onChange={(v) => onChange("collegeId", v)}
-      />
-      <Input
-        label="College Email"
-        value={member.collegeEmail}
-        onChange={(v) => onChange("collegeEmail", v)}
-      />
-      <NumberInput
-        label="Contact"
-        value={member.contact}
-        onChange={(v) => onChange("contact", v)}
-      />
+      <Input label="Name" value={member.name} onChange={(v) => onChange("name", v)} required minLength={2} maxLength={100} />
+      <Input label="College ID Number" value={member.collegeId} onChange={(v) => onChange("collegeId", v)} required minLength={3} maxLength={50} />
+      <Input label="College Email" value={member.collegeEmail} onChange={(v) => onChange("collegeEmail", v)} type="email" required />
+      <NumberInput label="Contact" value={member.contact} onChange={(v) => onChange("contact", v)} />
     </div>
   </div>
 );
@@ -784,18 +615,19 @@ type NumberInputProps = {
 
 const NumberInput = ({ label, value, onChange }: NumberInputProps) => (
   <label className="block">
-    <p className="text-xs uppercase tracking-[0.2em] text-foreground/70 font-semibold mb-1">
-      {label}
-    </p>
+    <p className="text-xs uppercase tracking-[0.2em] text-foreground/70 font-semibold mb-1">{label}</p>
     <input
       type="tel"
       inputMode="numeric"
-      pattern="[0-9]*"
+      pattern="[0-9]{10,15}"
       value={value === 0 ? "" : value}
       onChange={(event) => {
         const digits = event.target.value.replace(/\D/g, "");
         onChange(digits ? Number(digits) : 0);
       }}
+      required
+      minLength={10}
+      maxLength={15}
       className="w-full rounded-md border border-foreground/20 bg-background px-3 py-2 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-fnblue/50"
     />
   </label>

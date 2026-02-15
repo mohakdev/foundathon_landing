@@ -35,7 +35,7 @@ const About = () => {
       <div className="fncontainer relative py-20 md:py-24 space-y-16">
         <div className="space-y-5 text-center max-w-4xl mx-auto">
           <p className="rounded-full inline-flex px-3 uppercase font-bold tracking-wide bg-fngreen/20 text-fngreen border-2 border-fngreen">
-            Foundathon 3.0 | Monopoly Edition
+            Fastest Fingers First
           </p>
           <h2 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-balance">
             claim your block,
