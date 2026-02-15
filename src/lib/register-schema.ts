@@ -2,8 +2,9 @@ import { z } from "zod";
 
 const contactNumberSchema = z
   .number()
-  .min(10, "Valid contact is required. Too Short.")
-  .max(10, "Contact must be 10 digits (without 0 and +91).");
+  .int("Contact must contain digits only.")
+  .gte(1_000_000_000, "Contact must be 10 digits (without 0 and +91).")
+  .lte(9_999_999_999, "Contact must be 10 digits (without 0 and +91).");
 
 export const srmMemberSchema = z.object({
   name: z
@@ -24,8 +25,7 @@ export const srmMemberSchema = z.object({
     .min(6, "NetID must be 6 characters long.")
     .max(6, "NetID must be 6 characters long.")
     .regex(/^[a-z]{2}[0-9]{4}$/, {
-      message:
-        "NetID must be 2 lowercase letters followed by 4 digits.",
+      message: "NetID must be 2 lowercase letters followed by 4 digits.",
     }),
   dept: z.string().trim().min(2, "Department is required."), // TODO: Maybe add a dropdown with common departments?
   contact: contactNumberSchema,
