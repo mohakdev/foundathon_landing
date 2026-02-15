@@ -1,16 +1,21 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  createSupabaseClient,
-  EVENT_ID,
-  getSupabaseCredentials,
-  JSON_HEADERS,
-  type RegistrationRow,
-  toTeamRecord,
-  toTeamSummary,
-  transformToLegacyFormat,
-  UUID_PATTERN,
-} from "@/lib/register-api";
 import { teamSubmissionSchema } from "@/lib/register-schema";
+
+const JSON_HEADERS = { "Cache-Control": "no-store" };
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EVENT_ID = '583a3b40-da9d-412a-a266-cc7e64330b16';
+
+type TeamSummary = {
+  id: string;
+  teamName: string;
+  teamType: "srm" | "non_srm";
+  leadName: string;
+  memberCount: number;
+  createdAt: string;
+};
 
 const isJsonRequest = (request: NextRequest) =>
   request.headers.get("content-type")?.includes("application/json");
@@ -23,17 +28,50 @@ const parseRequestJson = async (request: NextRequest): Promise<unknown> => {
   }
 };
 
-const missingSupabaseConfigResponse = () =>
-  NextResponse.json(
-    { error: "Supabase environment variables are not configured." },
-    { status: 500, headers: JSON_HEADERS },
+async function createSupabaseClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
+      },
+    }
   );
+}
+
+function toTeamSummary(row: any): TeamSummary {
+  const details = row.details ?? {};
+  const memberCount = row.details.members.length + 1; // +1 for lead
+
+  return {
+    id: row.id,
+    teamName:
+      typeof details.teamName === "string" && details.teamName.trim().length > 0
+        ? details.teamName
+        : "Unnamed Team",
+    teamType: details.teamType === "non_srm" ? "non_srm" : "srm",
+    leadName:
+      typeof details.lead.name === "string" &&
+      details.lead.name.trim().length > 0
+        ? details.lead.name
+        : "Unknown Lead",
+    memberCount: Math.max(memberCount, 1),
+    createdAt: row.created_at
+  };
+}
 
 export async function GET() {
-  const credentials = getSupabaseCredentials();
-  if (!credentials) return missingSupabaseConfigResponse();
-
-  const supabase = await createSupabaseClient(credentials);
+  const supabase = await createSupabaseClient();
   const {
     data: { user },
     error: authError,
@@ -48,7 +86,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("eventsregistrations")
-    .select("id, created_at, updated_at, details")
+    .select("id, created_at, details")
     .eq("event_id", EVENT_ID)
     .eq("application_id", user.id)
     .order("created_at", { ascending: false });
@@ -59,10 +97,10 @@ export async function GET() {
       { status: 500, headers: JSON_HEADERS },
     );
   }
-
   const teams = (data ?? []).map((row) =>
-    toTeamSummary(row as RegistrationRow),
+    toTeamSummary(row),
   );
+  console.log("Fetched registrations:", teams);
   return NextResponse.json({ teams }, { headers: JSON_HEADERS });
 }
 
@@ -90,10 +128,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const credentials = getSupabaseCredentials();
-  if (!credentials) return missingSupabaseConfigResponse();
-
-  const supabase = await createSupabaseClient(credentials);
+  const supabase = await createSupabaseClient();
   const {
     data: { user },
     error: authError,
@@ -105,20 +140,13 @@ export async function POST(request: NextRequest) {
       { status: 401, headers: JSON_HEADERS },
     );
   }
-
-  const { data: existing, error: existingError } = await supabase
+  //Check if registration already exists
+  const { data: existing } = await supabase
     .from("eventsregistrations")
     .select("id")
     .eq("event_id", EVENT_ID)
     .eq("application_id", user.id)
     .maybeSingle();
-
-  if (existingError) {
-    return NextResponse.json(
-      { error: "Failed to check existing registration." },
-      { status: 500, headers: JSON_HEADERS },
-    );
-  }
 
   if (existing) {
     return NextResponse.json(
@@ -127,7 +155,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const legacyDetails = transformToLegacyFormat(parsed.data);
   const { data, error } = await supabase
     .from("eventsregistrations")
     .insert([
@@ -135,26 +162,25 @@ export async function POST(request: NextRequest) {
         event_id: EVENT_ID,
         event_title: "Foundathon 3.0",
         application_id: user.id,
-        details: legacyDetails,
+        details: parsed.data,
         registration_email: user.email,
         is_team_entry: true,
       },
     ])
-    .select("id, created_at, updated_at, details")
+    .select("id, created_at, details")
     .single();
 
   if (error || !data) {
     return NextResponse.json(
-      { error: "Failed to register team." },
+      { error: error.message || "Failed to create registration." },
       { status: 500, headers: JSON_HEADERS },
     );
   }
 
-  const row = data as RegistrationRow;
   return NextResponse.json(
     {
-      team: toTeamRecord(row) ?? { id: row.id },
-      teams: [toTeamSummary(row)],
+      team: { id: data.id },
+      teams: [toTeamSummary(data )],
     },
     { status: 201, headers: JSON_HEADERS },
   );
@@ -175,10 +201,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  const credentials = getSupabaseCredentials();
-  if (!credentials) return missingSupabaseConfigResponse();
-
-  const supabase = await createSupabaseClient(credentials);
+  const supabase = await createSupabaseClient();
   const {
     data: { user },
     error: authError,
@@ -216,20 +239,20 @@ export async function DELETE(request: NextRequest) {
 
   const { data, error } = await supabase
     .from("eventsregistrations")
-    .select("id, created_at, updated_at, details")
+    .select("id, created_at, details")
     .eq("event_id", EVENT_ID)
     .eq("application_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json(
-      { error: "Deleted team, but failed to refresh list." },
+      { error: error.message || "Failed to delete team" },
       { status: 500, headers: JSON_HEADERS },
     );
   }
 
   const teams = (data ?? []).map((row) =>
-    toTeamSummary(row as RegistrationRow),
+    toTeamSummary(row ),
   );
   return NextResponse.json({ teams }, { headers: JSON_HEADERS });
 }

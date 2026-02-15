@@ -2,9 +2,13 @@ import { z } from "zod";
 
 const contactNumberSchema = z
   .number()
-  .int("Contact must contain digits only.")
-  .gte(1_000_000_000, "Contact must be 10 digits (without 0 and +91).")
-  .lte(9_999_999_999, "Contact must be 10 digits (without 0 and +91).");
+  .int("Contact must be an integer")
+  .refine((val) => {
+    const str = val.toString();
+    return str.length === 10 && /^[6-9]/.test(str);
+  }, {
+    message: "Please enter a valid 10-digit mobile number.",
+  });
 
 export const srmMemberSchema = z.object({
   name: z

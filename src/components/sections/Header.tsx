@@ -91,9 +91,9 @@ const Header = () => {
             <FnButton asChild tone="blue">
               <Link href="/register">Register Team</Link>
             </FnButton>
-            <Button type="button" onClick={handleSignIn} disabled={isSigningIn}>
-              {isSigningIn ? "Signing In..." : "Sign In"}
-            </Button>
+            <FnButton asChild tone="yellow">
+              <Link href="/api/auth/login">Sign In</Link>
+            </FnButton>
           </div>
         </div>
       </div>
