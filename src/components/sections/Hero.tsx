@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { FnButton } from "@/components/ui/fn-button";
 import { getAuthUiState } from "@/lib/auth-ui-state";
+import { Magnetic } from "../ui/magnetic";
 import HeroRegisterButton from "./HeroRegisterButton";
+import { springOptions } from "@/lib/constants";
 
 const content = {
   caption: "Foundathon 3.0 | Monopoly Edition | 2026",
@@ -15,7 +17,6 @@ const content = {
 
 const Hero = async () => {
   const { isSignedIn, teamId } = await getAuthUiState();
-
   return (
     <section
       id="hero"
@@ -60,11 +61,25 @@ const Hero = async () => {
               initialTeamId={teamId}
               label={content.primaryButtonText}
             />
-            <FnButton asChild tone="gray" size="lg" className="border-fnblue">
-              <Link href="/problem-statements">
-                {content.secondaryButtonText}
-              </Link>
-            </FnButton>
+            <Magnetic
+              intensity={0.1}
+              springOptions={springOptions}
+              actionArea='global'
+              range={200}
+            >
+              <FnButton asChild tone="gray" size="lg" className="border-fnblue">
+                <Link href="/problem-statements">
+                  <Magnetic
+                    intensity={0.05}
+                    springOptions={springOptions}
+                    actionArea='global'
+                    range={200}
+                  >
+                    {content.secondaryButtonText}
+                  </Magnetic>
+                </Link>
+              </FnButton>
+            </Magnetic>
           </div>
         </div>
       </div>
