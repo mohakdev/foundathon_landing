@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FnButton } from "@/components/ui/fn-button";
 import { toast } from "@/hooks/use-toast";
-import { getProblemReleaseCountdown } from "@/lib/problem-release-countdown";
 import type { TeamRecord } from "@/lib/register-schema";
 
 const SummaryValue = ({
@@ -24,17 +23,8 @@ const SummaryValue = ({
 
 export default function RegistrationSuccessPage() {
   const params = useParams<{ teamId: string }>();
-  const [time, setTime] = useState(() => getProblemReleaseCountdown());
   const [team, setTeam] = useState<TeamRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const id = window.setInterval(
-      () => setTime(getProblemReleaseCountdown()),
-      1000,
-    );
-    return () => clearInterval(id);
-  }, []);
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -102,34 +92,13 @@ export default function RegistrationSuccessPage() {
               </span>
             </div>
             <h1 className="mt-4 text-4xl md:text-6xl font-black uppercase tracking-tight">
-              get ready for
-              <span className="text-fnblue"> release</span>
+              team setup
+              <span className="text-fnblue"> complete</span>
             </h1>
             <p className="mt-3 text-foreground/70">
-              Your team is registered. Countdown to problem statement release is
-              live.
+              Your team is registered and ready. Continue to dashboard to manage
+              team details.
             </p>
-
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Days", value: time.days },
-                { label: "Hours", value: time.hours },
-                { label: "Minutes", value: time.minutes },
-                { label: "Seconds", value: time.seconds },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-xl border bg-linear-to-b from-gray-100 to-gray-50 border-b-4 border-fnyellow p-5 text-center shadow-md"
-                >
-                  <p className="text-5xl md:text-7xl font-black text-fnblue leading-none">
-                    {item.value}
-                  </p>
-                  <p className="text-xs uppercase tracking-[0.2em] text-foreground/70 mt-2">
-                    {item.label}
-                  </p>
-                </div>
-              ))}
-            </div>
 
             <div className="mt-6 rounded-xl border border-fnblue/25 bg-fnblue/10 p-4">
               <p className="text-xs uppercase tracking-[0.18em] font-semibold text-fnblue">

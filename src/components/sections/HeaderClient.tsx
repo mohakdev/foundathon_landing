@@ -22,7 +22,6 @@ type HeaderClientProps = {
 const navLinks = [
   { href: "/#overview", label: "Overview" },
   { href: "/#rules", label: "Rules" },
-  { href: "/#release", label: "Release" },
   { href: "/#champion", label: "Goodies" },
 ];
 

@@ -1,36 +1,11 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import { FnButton } from "@/components/ui/fn-button";
-import { SlidingNumber } from "@/components/ui/sliding-number";
-import { PROBLEM_STATEMENT_RELEASE_DATE } from "@/data/problem-statement-release";
 import {
   PROBLEM_STATEMENT_CAP,
   PROBLEM_STATEMENTS,
 } from "@/data/problem-statements";
-import { getProblemReleaseCountdown } from "@/lib/problem-release-countdown";
 
 export default function ProblemStatementsPage() {
-  const [time, setTime] = useState(() => getProblemReleaseCountdown());
-  const releaseDate = useMemo(() => PROBLEM_STATEMENT_RELEASE_DATE, []);
-  const releaseHeadline = time.released
-    ? "statements are live"
-    : "release countdown";
-  const releaseDescription = time.invalid
-    ? "Release date configuration is invalid. Please contact the organizing team."
-    : time.released
-      ? "Problem statements are live now. Proceed to registration to lock one and create your team."
-      : "Once the board opens, teams can lock one statement during onboarding and then complete team creation.";
-
-  useEffect(() => {
-    const id = window.setInterval(
-      () => setTime(getProblemReleaseCountdown()),
-      1000,
-    );
-    return () => clearInterval(id);
-  }, []);
-
   return (
     <main className="min-h-screen bg-gray-200 text-foreground relative overflow-hidden">
       <div
@@ -54,62 +29,24 @@ export default function ProblemStatementsPage() {
               Problem Statements
             </p>
             <h1 className="mt-4 text-5xl md:text-7xl font-black uppercase tracking-tight leading-none text-balance">
-              {releaseHeadline}
+              statement board
             </h1>
-            <p className="mt-3 text-foreground/75 max-w-2xl">
-              {releaseDescription}
+            <p className="mt-3 text-foreground/75 max-w-3xl">
+              Review all tracks before registration. During onboarding, your
+              team must lock exactly one statement and then create the team.
             </p>
 
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Days", value: time.days },
-                { label: "Hours", value: time.hours },
-                { label: "Minutes", value: time.minutes },
-                { label: "Seconds", value: time.seconds },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-xl border bg-linear-to-b from-white to-gray-100 p-5 text-center shadow-lg border-b-4 border-fnblue"
-                >
-                  <div className="text-6xl md:text-8xl font-black leading-none text-fnblue drop-shadow-[0_0_10px_rgba(59,130,246,0.18)] flex justify-center">
-                    <SlidingNumber
-                      value={parseInt(item.value, 10)}
-                      padStart={true}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-foreground/70">
-                    {item.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 rounded-xl border border-fnblue/20 bg-fnblue/10 p-4">
+            <div className="mt-6 rounded-xl border border-fnblue/25 bg-fnblue/10 p-4 md:p-5">
               <p className="text-xs uppercase tracking-[0.18em] text-fnblue font-semibold">
-                Release Time
+                Lock Rules
               </p>
-              <p
-                className="mt-1 text-lg md:text-xl font-bold"
-                suppressHydrationWarning
-              >
-                {releaseDate.toLocaleString("en-IN", { timeZoneName: "short" })}
-              </p>
-              <p
-                className="text-sm text-foreground/70"
-                suppressHydrationWarning
-              >
-                UTC: {releaseDate.toUTCString()}
-              </p>
-              <p
-                className="mt-2 text-sm font-semibold text-foreground/80"
-                aria-live="polite"
-              >
-                {time.invalid
-                  ? "Timer unavailable."
-                  : time.released
-                    ? "Problem statements are now open for locking."
-                    : "Locking opens when this countdown reaches zero."}
-              </p>
+              <ul className="mt-2 space-y-1 text-sm text-foreground/80">
+                <li>
+                  Each statement supports up to {PROBLEM_STATEMENT_CAP} teams.
+                </li>
+                <li>Team creation is enabled only after a successful lock.</li>
+                <li>Statement assignment is saved with your team record.</li>
+              </ul>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
