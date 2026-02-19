@@ -8,19 +8,19 @@ import { SlidingNumber } from "../ui/sliding-number";
 
 const problemHighlights = [
   {
-    title: "Partner Territories (Problem Claims)",
+    title: "Partner Territories (Problem Tracks)",
     detail:
-      "High-impact problem statements are curated by partner companies. Think of each one as a premium property tile that teams can claim early.",
+      "High-impact problem statements are curated by partner companies. Each statement represents a focused track with real execution constraints.",
   },
   {
-    title: "First-Come, First-Serve Draft",
+    title: "Lock Before Team Creation",
     detail:
-      "Selection is strictly first-come, first-serve for each statement. Once a problem tile is full, teams must choose another open tile.",
+      "Teams first complete onboarding, then lock one statement. Team registration is finalized only after the lock and create action.",
   },
   {
-    title: "PPT Submission Cap Rule",
+    title: "Per-Statement Team Cap",
     detail:
-      "When a certain number of teams for a statement submits PPTs, that statement is disabled and no additional team can opt for it.",
+      "Each problem statement has a fixed team cap. Once filled, that statement is marked unavailable for new teams.",
   },
 ];
 
@@ -42,7 +42,7 @@ const About = () => {
       <div className="fncontainer relative py-20 md:py-24 space-y-16">
         <div className="space-y-5 text-center max-w-4xl mx-auto">
           <p className="rounded-full inline-flex px-3 uppercase font-bold tracking-wide bg-fngreen/20 text-fngreen border-2 border-fngreen">
-            Fastest Fingers First
+            Structured Onboarding
           </p>
           <h2 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-balance">
             claim your block,
@@ -63,16 +63,14 @@ const About = () => {
             <InView
               key={item.title}
               variants={{
-                hidden: { opacity: 0, y: 100, filter: 'blur(4px)' },
-                visible: { opacity: 1, y: 0, filter: 'blur(0px)' },
+                hidden: { opacity: 0, y: 100, filter: "blur(4px)" },
+                visible: { opacity: 1, y: 0, filter: "blur(0px)" },
               }}
-              viewOptions={{ margin: '0px 0px -200px 0px' }}
-              transition={{ duration: 0.3 + (key / 10) , ease: 'easeInOut' }}
+              viewOptions={{ margin: "0px 0px -200px 0px" }}
+              transition={{ duration: 0.3 + key / 10, ease: "easeInOut" }}
               once
             >
-              <div
-                className="rounded-xl h-full bg-gray-100 border-b-4 border-fnblue border px-6 py-7 shadow-sm"
-              >
+              <div className="rounded-xl h-full bg-gray-100 border-b-4 border-fnblue border px-6 py-7 shadow-sm">
                 <p className="text-xs uppercase tracking-[0.25em] text-fnblue font-bold">
                   Board Rule
                 </p>
@@ -116,8 +114,14 @@ const About = () => {
                 key={unit.label}
                 className="rounded-xl border bg-linear-to-b from-white to-gray-100 p-5 border-b-4 border-fnblue text-center shadow-sm"
               >
-                <div className="text-4xl md:text-5xl font-black tracking-tight text-fnblue flex justify-center" suppressHydrationWarning>
-                  <SlidingNumber value={parseInt(unit.value, 10)} padStart={true} />
+                <div
+                  className="text-4xl md:text-5xl font-black tracking-tight text-fnblue flex justify-center"
+                  suppressHydrationWarning
+                >
+                  <SlidingNumber
+                    value={parseInt(unit.value, 10)}
+                    padStart={true}
+                  />
                 </div>
                 <p className="text-xs uppercase tracking-[0.25em] text-foreground/70 mt-2">
                   {unit.label}
@@ -130,7 +134,10 @@ const About = () => {
             <p className="text-sm uppercase tracking-[0.2em] text-foreground/70">
               Release Time
             </p>
-            <p className="text-lg md:text-xl font-bold" suppressHydrationWarning>
+            <p
+              className="text-lg md:text-xl font-bold"
+              suppressHydrationWarning
+            >
               {releaseDate.toLocaleString("en-IN", { timeZoneName: "short" })}
             </p>
             <p className="text-sm text-foreground/70" suppressHydrationWarning>
@@ -141,7 +148,7 @@ const About = () => {
                 ? "Release date configuration is invalid. Please update the constant value."
                 : timeLeft.released
                   ? "Problem statements are now live."
-                  : "The first-come, first-serve draft begins as soon as this countdown ends."}
+                  : "Problem statement locking opens as soon as this countdown ends."}
             </p>
           </div>
         </div>

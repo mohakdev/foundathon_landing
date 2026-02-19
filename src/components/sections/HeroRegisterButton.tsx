@@ -40,7 +40,7 @@ const HeroRegisterButton = ({
               <Magnetic
                 intensity={0.05}
                 springOptions={springOptions}
-                actionArea='global'
+                actionArea="global"
                 range={200}
               >
                 <span className="text-nowrap flex gap-2 items-center">

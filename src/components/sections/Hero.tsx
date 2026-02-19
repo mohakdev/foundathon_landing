@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { FnButton } from "@/components/ui/fn-button";
 import { getAuthUiState } from "@/lib/auth-ui-state";
+import { springOptions } from "@/lib/constants";
 import { Magnetic } from "../ui/magnetic";
 import HeroRegisterButton from "./HeroRegisterButton";
-import { springOptions } from "@/lib/constants";
 
 const content = {
   caption: "Foundathon 3.0 | Monopoly Edition | 2026",
   heading: "claim the problem",
   headingHighlight: "own the board",
   description:
-    "Pick one of multiple partner-backed real-world problem statements on a first-come, first-serve basis. Build for 2 days with direct company mentorship, then compete in a final expert-panel showdown on Day 3.",
+    "Register your team, lock one partner-backed problem statement, and build for 2 days with direct company mentorship before the final expert-panel showdown on Day 3.",
   primaryButtonText: "Register Team",
   secondaryButtonText: "Problem Statements",
 };
@@ -64,7 +64,7 @@ const Hero = async () => {
             <Magnetic
               intensity={0.1}
               springOptions={springOptions}
-              actionArea='global'
+              actionArea="global"
               range={200}
             >
               <FnButton asChild tone="gray" size="lg" className="border-fnblue">
@@ -72,7 +72,7 @@ const Hero = async () => {
                   <Magnetic
                     intensity={0.05}
                     springOptions={springOptions}
-                    actionArea='global'
+                    actionArea="global"
                     range={200}
                   >
                     {content.secondaryButtonText}
