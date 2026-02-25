@@ -1,4 +1,5 @@
 import {
+  type TeamApprovalStatus,
   type TeamRecord,
   type TeamSubmission,
   teamSubmissionSchema,
@@ -18,6 +19,7 @@ export type TeamSummary = {
 export type RegistrationRow = {
   id: string;
   created_at: string;
+  is_approved?: string | null;
   updated_at?: string | null;
   details: Record<string, unknown> | null;
 };
@@ -129,6 +131,25 @@ const toOptionalPositiveInteger = (value: unknown) =>
     ? value
     : undefined;
 
+const toOptionalApprovalStatus = (
+  value: unknown,
+): TeamApprovalStatus | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  switch (normalized) {
+    case "accepted":
+    case "invalid":
+    case "rejected":
+    case "submitted":
+      return normalized;
+    default:
+      return undefined;
+  }
+};
+
 export function toTeamRecord(row: RegistrationRow): TeamRecord | null {
   const details = row.details ?? {};
   const normalized = normalizeSrmDetailsForSchema(details);
@@ -158,9 +179,11 @@ export function toTeamRecord(row: RegistrationRow): TeamRecord | null {
   const presentationFileSizeBytes = toOptionalPositiveInteger(
     details.presentationFileSizeBytes,
   );
+  const approvalStatus = toOptionalApprovalStatus(row.is_approved);
 
   return {
     ...parsed.data,
+    ...(approvalStatus ? { approvalStatus } : {}),
     id: row.id,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? row.created_at,

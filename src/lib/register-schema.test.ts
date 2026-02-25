@@ -206,6 +206,7 @@ describe("teamRecordSchema", () => {
       problemStatementId: "ps-01",
       problemStatementLockedAt: "2026-02-19T08:00:00.000Z",
       problemStatementTitle: "Campus Mobility Optimizer",
+      approvalStatus: "submitted",
       presentationFileName: "team-deck.pptx",
       presentationFileSizeBytes: 1024,
       presentationMimeType:
@@ -249,6 +250,42 @@ describe("teamRecordSchema", () => {
         },
       ],
       presentationFileSizeBytes: 0,
+    });
+
+    expect(parsed.success).toBe(false);
+  });
+
+  it("rejects invalid approval status values", () => {
+    const parsed = teamRecordSchema.safeParse({
+      id: "11111111-1111-4111-8111-111111111111",
+      createdAt: "2026-02-20T10:00:00.000Z",
+      updatedAt: "2026-02-20T10:05:00.000Z",
+      teamType: "srm",
+      teamName: "Board Breakers",
+      lead: {
+        name: "Lead One",
+        raNumber: "RA0000000000001",
+        netId: "od7270",
+        dept: "CSE",
+        contact: 9876543210,
+      },
+      members: [
+        {
+          name: "Member One",
+          raNumber: "RA0000000000002",
+          netId: "ab1234",
+          dept: "CSE",
+          contact: 9876543211,
+        },
+        {
+          name: "Member Two",
+          raNumber: "RA0000000000003",
+          netId: "cd5678",
+          dept: "ECE",
+          contact: 9876543212,
+        },
+      ],
+      approvalStatus: "pending",
     });
 
     expect(parsed.success).toBe(false);

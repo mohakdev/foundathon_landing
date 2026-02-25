@@ -113,6 +113,13 @@ export const teamSubmissionSchema = z.discriminatedUnion("teamType", [
   nonSrmTeamSubmissionSchema,
 ]);
 
+export const teamApprovalStatusSchema = z.enum([
+  "invalid",
+  "submitted",
+  "accepted",
+  "rejected",
+]);
+
 const problemStatementMetadataSchema = z
   .object({
     problemStatementCap: z.number().int().positive(),
@@ -136,10 +143,12 @@ const presentationMetadataSchema = z
 export const teamRecordSchema = teamSubmissionSchema.and(
   z
     .object({
+      approvalStatus: teamApprovalStatusSchema,
       id: z.string(),
       createdAt: z.string(),
       updatedAt: z.string(),
     })
+    .partial({ approvalStatus: true })
     .and(problemStatementMetadataSchema)
     .and(presentationMetadataSchema),
 );
@@ -148,5 +157,6 @@ export const teamRecordListSchema = z.array(teamRecordSchema);
 
 export type SrmMember = z.infer<typeof srmMemberSchema>;
 export type NonSrmMember = z.infer<typeof nonSrmMemberSchema>;
+export type TeamApprovalStatus = z.infer<typeof teamApprovalStatusSchema>;
 export type TeamSubmission = z.infer<typeof teamSubmissionSchema>;
 export type TeamRecord = z.infer<typeof teamRecordSchema>;

@@ -1,6 +1,15 @@
 "use client";
 
-import { Download, PlusIcon, Trash2, UserRoundPen } from "lucide-react";
+import {
+  Copy,
+  Download,
+  ExternalLink,
+  Info,
+  PlusIcon,
+  Trash2,
+  UserRoundPen,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -64,6 +73,8 @@ type PresentationInfo = {
   storagePath: string;
   uploadedAt: string;
 };
+
+type TeamApprovalStatus = NonNullable<TeamRecord["approvalStatus"]>;
 
 const MAX_MEMBERS = 5;
 const SRM_EMAIL_DOMAIN = "@srmist.edu.in";
@@ -134,6 +145,95 @@ const formatBytes = (value: number | null) => {
   return `${(value / (1024 * 1024)).toFixed(2)} MB`;
 };
 
+const toPresentationPreviewUrl = (publicUrl: string) => {
+  const normalizedUrl = publicUrl.trim();
+  if (!normalizedUrl) {
+    return "";
+  }
+
+  return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+    normalizedUrl,
+  )}`;
+};
+
+const normalizeApprovalStatus = (
+  value: string | undefined,
+): TeamApprovalStatus | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  switch (normalized) {
+    case "accepted":
+    case "invalid":
+    case "rejected":
+    case "submitted":
+      return normalized;
+    default:
+      return undefined;
+  }
+};
+
+const resolveTeamApprovalStatus = ({
+  dbStatus,
+  isPresentationSubmitted,
+}: {
+  dbStatus: TeamApprovalStatus | undefined;
+  isPresentationSubmitted: boolean;
+}): TeamApprovalStatus => {
+  if (dbStatus === "accepted" || dbStatus === "rejected") {
+    return dbStatus;
+  }
+
+  return isPresentationSubmitted ? "submitted" : "invalid";
+};
+
+const getTeamApprovalStatusMeta = (status: TeamApprovalStatus) => {
+  switch (status) {
+    case "accepted":
+      return {
+        badgeClass: "border-fngreen/40 bg-fngreen/10 text-fngreen",
+        description:
+          "Your team has been approved by admins. You are cleared to participate in the event flow.",
+        dotClass: "bg-fngreen",
+        label: "Accepted",
+        panelClass:
+          "border-fngreen bg-linear-to-r from-fngreen/15 via-background to-fngreen/5",
+      };
+    case "rejected":
+      return {
+        badgeClass: "border-fnred/40 bg-fnred/10 text-fnred",
+        description:
+          "Your submission was reviewed and rejected by admins. Wait for organizer guidance on next steps.",
+        dotClass: "bg-fnred",
+        label: "Rejected",
+        panelClass:
+          "border-fnred bg-linear-to-r from-fnred/15 via-background to-fnred/5",
+      };
+    case "submitted":
+      return {
+        badgeClass: "border-fnblue/40 bg-fnblue/10 text-fnblue",
+        description:
+          "Your PPT is submitted and currently under admin review. Final status will move to Accepted or Rejected.",
+        dotClass: "bg-fnblue",
+        label: "Submitted",
+        panelClass:
+          "border-fnblue bg-linear-to-r from-fnblue/15 via-background to-fnblue/5",
+      };
+    default:
+      return {
+        badgeClass: "border-slate-500/40 bg-slate-500/10 text-slate-700",
+        description:
+          "Team is created but no PPT is submitted yet. Submit your presentation from Actions to move to review.",
+        dotClass: "bg-slate-500",
+        label: "Invalid",
+        panelClass:
+          "border-slate-400 bg-linear-to-r from-slate-100/80 via-background to-slate-50",
+      };
+  }
+};
+
 export default function TeamDashboardPage() {
   const params = useParams<{ teamId: string }>();
   const router = useRouter();
@@ -175,6 +275,9 @@ export default function TeamDashboardPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingLockProblemStatement, setPendingLockProblemStatement] =
     useState<PendingLockProblemStatement | null>(null);
+  const [teamApprovalStatusFromDb, setTeamApprovalStatusFromDb] = useState<
+    TeamApprovalStatus | undefined
+  >(undefined);
   const [formError, setFormError] = useState<string | null>(null);
   const [createdAt, setCreatedAt] = useState("");
   const [problemStatement, setProblemStatement] =
@@ -185,6 +288,7 @@ export default function TeamDashboardPage() {
   const [pendingPresentationFile, setPendingPresentationFile] =
     useState<File | null>(null);
   const [showPresentationConfirm, setShowPresentationConfirm] = useState(false);
+  const [showPresentationPreview, setShowPresentationPreview] = useState(false);
   const [isSubmittingPresentation, setIsSubmittingPresentation] =
     useState(false);
   const [problemStatements, setProblemStatements] = useState<
@@ -200,6 +304,10 @@ export default function TeamDashboardPage() {
   const createdQuery = searchParams.get("created");
   const activeTab = parseDashboardTab(rawTab);
   const isPresentationSubmitted = Boolean(presentation.publicUrl);
+  const presentationPreviewUrl = useMemo(
+    () => toPresentationPreviewUrl(presentation.publicUrl),
+    [presentation.publicUrl],
+  );
   const presentationLeadEmail = useMemo(() => {
     if (teamType === "srm") {
       return toSrmLeadEmail(leadSrm.netId);
@@ -400,6 +508,9 @@ export default function TeamDashboardPage() {
         setTeamName(team.teamName);
         setCreatedAt(team.createdAt);
         setUpdatedAt(team.updatedAt);
+        setTeamApprovalStatusFromDb(
+          normalizeApprovalStatus(team.approvalStatus),
+        );
         setProblemStatement({
           cap: team.problemStatementCap ?? null,
           id: team.problemStatementId ?? "",
@@ -446,6 +557,29 @@ export default function TeamDashboardPage() {
 
     void loadProblemStatements();
   }, [isLoading, loadProblemStatements, problemStatement.id]);
+
+  useEffect(() => {
+    if (!isPresentationSubmitted && showPresentationPreview) {
+      setShowPresentationPreview(false);
+    }
+  }, [isPresentationSubmitted, showPresentationPreview]);
+
+  useEffect(() => {
+    if (!showPresentationPreview) {
+      return;
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowPresentationPreview(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [showPresentationPreview]);
 
   if (loadError) {
     return (
@@ -638,6 +772,9 @@ export default function TeamDashboardPage() {
       }
 
       setUpdatedAt(data.team.updatedAt);
+      setTeamApprovalStatusFromDb(
+        normalizeApprovalStatus(data.team.approvalStatus),
+      );
       setFormError(null);
       toast({
         title: "Team Changes Saved",
@@ -741,6 +878,9 @@ export default function TeamDashboardPage() {
       }
 
       setUpdatedAt(patchData.team.updatedAt);
+      setTeamApprovalStatusFromDb(
+        normalizeApprovalStatus(patchData.team.approvalStatus),
+      );
       setProblemStatement({
         cap: patchData.team.problemStatementCap ?? null,
         id: patchData.team.problemStatementId ?? "",
@@ -899,6 +1039,9 @@ export default function TeamDashboardPage() {
             };
             if (teamResponse.ok && teamData.team) {
               setUpdatedAt(teamData.team.updatedAt);
+              setTeamApprovalStatusFromDb(
+                normalizeApprovalStatus(teamData.team.approvalStatus),
+              );
               setPresentationFromTeam(teamData.team);
             }
           } catch {
@@ -920,6 +1063,9 @@ export default function TeamDashboardPage() {
       }
 
       setUpdatedAt(data.team.updatedAt);
+      setTeamApprovalStatusFromDb(
+        normalizeApprovalStatus(data.team.approvalStatus),
+      );
       setPresentationFromTeam(data.team);
       clearPendingPresentationSelection();
       setShowPresentationConfirm(false);
@@ -992,6 +1138,49 @@ export default function TeamDashboardPage() {
     );
   };
 
+  const copyTeamId = async () => {
+    const fallbackCopy = () => {
+      if (typeof document === "undefined") {
+        return false;
+      }
+
+      const textarea = document.createElement("textarea");
+      textarea.value = teamId;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return copied;
+    };
+
+    try {
+      if (
+        typeof navigator !== "undefined" &&
+        typeof navigator.clipboard?.writeText === "function"
+      ) {
+        await navigator.clipboard.writeText(teamId);
+      } else if (!fallbackCopy()) {
+        throw new Error("Clipboard unavailable");
+      }
+
+      toast({
+        title: "Team ID Copied",
+        description: "Copied team ID to clipboard.",
+        variant: "success",
+      });
+    } catch {
+      toast({
+        title: "Copy Failed",
+        description:
+          "Couldn't copy the team ID automatically. Please copy it manually.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const teamTypeLabel = teamType === "srm" ? "SRM Team" : "Non-SRM Team";
   const problemStatementTitle =
     problemStatement.title || "No problem statement selected";
@@ -1009,10 +1198,19 @@ export default function TeamDashboardPage() {
     !isPresentationSubmitted &&
     !isSubmittingPresentation &&
     !isLoading;
+  const resolvedTeamApprovalStatus = resolveTeamApprovalStatus({
+    dbStatus: teamApprovalStatusFromDb,
+    isPresentationSubmitted,
+  });
+  const teamApprovalStatusMeta = getTeamApprovalStatusMeta(
+    resolvedTeamApprovalStatus,
+  );
   const presentationLeadEmailLabel = presentationLeadEmail || "lead email";
   const activeTabMeta =
     DASHBOARD_TABS.find((tab) => tab.id === activeTab) ?? DASHBOARD_TABS[0];
   const memberIdLabel = teamType === "srm" ? "NetID" : "College ID";
+  const copyTeamIdButtonClass =
+    "inline-flex size-7 items-center justify-center rounded-md border border-foreground/20 bg-white text-foreground/70 transition-colors hover:bg-fnblue/10 hover:text-fnblue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fnblue/50";
 
   if (isLoading) {
     return (
@@ -1147,6 +1345,46 @@ export default function TeamDashboardPage() {
             className="space-y-6"
           >
             <section
+              className={`relative overflow-visible rounded-2xl border border-b-4 p-5 shadow-lg md:p-6 ${teamApprovalStatusMeta.panelClass}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/70">
+                    Team Review Status
+                  </p>
+                  <div
+                    className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ${teamApprovalStatusMeta.badgeClass}`}
+                  >
+                    <span
+                      className={`inline-flex size-2 rounded-full ${teamApprovalStatusMeta.dotClass}`}
+                    />
+                    {teamApprovalStatusMeta.label}
+                  </div>
+                  <p className="mt-3 max-w-3xl text-sm leading-relaxed text-foreground/80 md:text-base">
+                    {teamApprovalStatusMeta.description}
+                  </p>
+                </div>
+
+                <div className="relative group shrink-0">
+                  <button
+                    type="button"
+                    aria-label="Status meaning"
+                    className="inline-flex size-8 items-center justify-center rounded-full border border-foreground/20 bg-white/85 text-foreground/75 transition-colors hover:bg-white hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fnblue/45"
+                  >
+                    <Info size={16} strokeWidth={2.6} />
+                  </button>
+                  <div
+                    role="tooltip"
+                    className="pointer-events-none absolute right-0 z-20 mt-2 w-72 rounded-lg border border-foreground/15 bg-background px-3 py-2 text-xs leading-relaxed text-foreground/85 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                  >
+                    {teamApprovalStatusMeta.label}:{" "}
+                    {teamApprovalStatusMeta.description}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section
               className={`relative overflow-hidden rounded-2xl border border-b-4 p-6 md:p-8 shadow-xl ${
                 hasLockedProblemStatement
                   ? "border-fnyellow bg-linear-to-br from-fnyellow/30 via-background to-fnblue/10"
@@ -1199,8 +1437,11 @@ export default function TeamDashboardPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-b-4 border-fnorange bg-background/95 p-6 shadow-lg">
-              <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+            <section className="relative overflow-hidden rounded-2xl border border-b-4 border-fnorange bg-background/95 p-6 shadow-lg">
+              <div className="absolute -top-10 right-0 size-36 rounded-full bg-fnorange/10 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-10 -left-8 size-32 rounded-full bg-fnblue/10 blur-3xl pointer-events-none" />
+
+              <div className="relative grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fnorange">
                     Team Snapshot
@@ -1208,10 +1449,21 @@ export default function TeamDashboardPage() {
                   <h3 className="mt-2 text-2xl font-black uppercase tracking-tight">
                     Continue Team Operations
                   </h3>
-                  <p className="mt-2 text-sm text-foreground/75">
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/75">
                     Manage roster updates from Manage Team and complete one-time
                     PPT operations from Actions.
                   </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-fnblue/35 bg-fnblue/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-fnblue">
+                      {teamTypeLabel}
+                    </span>
+                    <span className="rounded-full border border-fngreen/35 bg-fngreen/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-fngreen">
+                      {memberCount}/5 Members
+                    </span>
+                    <span className="rounded-full border border-fnorange/35 bg-fnorange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-fnorange">
+                      {completedProfiles}/{memberCount} Complete
+                    </span>
+                  </div>
                   <div className="mt-4 flex flex-wrap gap-3">
                     <FnButton type="button" onClick={() => goToTab("manage")}>
                       Go to Manage Team
@@ -1226,84 +1478,116 @@ export default function TeamDashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 text-sm">
-                  <MetricRow label="Team Type" value={teamTypeLabel} />
-                  <MetricRow label="Team Members" value={`${memberCount}/5`} />
-                  <MetricRow
-                    label="Completed Profiles"
-                    value={`${completedProfiles}/${memberCount}`}
-                  />
-                  <MetricRow
-                    label="Last Updated"
-                    value={formatDateTime(updatedAt)}
-                  />
-                  <MetricRow label="Team Name" value={teamName || "N/A"} />
-                  <MetricRow label="Team ID" value={teamId} />
-                  <MetricRow
-                    label="Lead"
-                    value={
-                      (teamType === "srm" ? leadSrm.name : leadNonSrm.name) ||
-                      "N/A"
-                    }
-                  />
-                  <MetricRow label="Lead ID" value={currentLeadId || "N/A"} />
-                  {teamType === "non_srm" ? (
-                    <>
-                      <MetricRow
-                        label="College"
-                        value={metaNonSrm.collegeName || "N/A"}
-                      />
-                      <MetricRow
-                        label="Club"
-                        value={
-                          metaNonSrm.isClub
-                            ? metaNonSrm.clubName || "Club team"
-                            : "Independent Team"
-                        }
-                      />
-                    </>
-                  ) : null}
-                  <MetricRow
-                    label="Created"
-                    value={formatDateTime(createdAt)}
-                    noBorder
-                  />
+                <div className="rounded-xl border border-fnorange/25 bg-white/75 p-4 backdrop-blur-xs">
+                  <div className="grid gap-2 text-sm">
+                    <MetricRow label="Team Name" value={teamName || "N/A"} />
+                    <div className="flex items-center justify-between gap-4 border-b border-foreground/10 py-1.5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/65">
+                        Team ID
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-mono text-xs text-right">{teamId}</p>
+                        <button
+                          type="button"
+                          aria-label="Copy Team ID"
+                          title="Copy Team ID"
+                          className={copyTeamIdButtonClass}
+                          onClick={copyTeamId}
+                        >
+                          <Copy size={14} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    </div>
+                    <MetricRow
+                      label="Lead"
+                      value={
+                        (teamType === "srm" ? leadSrm.name : leadNonSrm.name) ||
+                        "N/A"
+                      }
+                    />
+                    <MetricRow
+                      label="Lead ID"
+                      value={currentLeadId || "N/A"}
+                      mono
+                    />
+                    <MetricRow
+                      label="Last Updated"
+                      value={formatDateTime(updatedAt)}
+                    />
+                    {teamType === "non_srm" ? (
+                      <>
+                        <MetricRow
+                          label="College"
+                          value={metaNonSrm.collegeName || "N/A"}
+                        />
+                        <MetricRow
+                          label="Club"
+                          value={
+                            metaNonSrm.isClub
+                              ? metaNonSrm.clubName || "Club team"
+                              : "Independent Team"
+                          }
+                        />
+                      </>
+                    ) : null}
+                    <MetricRow
+                      label="Created"
+                      value={formatDateTime(createdAt)}
+                      noBorder
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-6 border-t border-foreground/10 pt-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fnyellow">
-                  Members Snapshot
-                </p>
-                <div className="mt-3 overflow-x-auto">
+              <div className="relative mt-6 border-t border-foreground/10 pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fnyellow">
+                    Members Snapshot
+                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/65">
+                    Total: {memberCount}
+                  </p>
+                </div>
+
+                <div className="mt-3 overflow-x-auto rounded-xl border border-foreground/10 bg-white/80">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-foreground/10 text-left">
-                        <th className="py-2 pr-3">Role</th>
-                        <th className="py-2 pr-3">Name</th>
-                        <th className="py-2 pr-3">{memberIdLabel}</th>
+                      <tr className="border-b border-foreground/10 bg-fnblue/5 text-left">
+                        <th className="py-2.5 px-3">Role</th>
+                        <th className="py-2.5 px-3">Name</th>
+                        <th className="py-2.5 px-3">{memberIdLabel}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-b border-foreground/10">
-                        <td className="py-2 pr-3 font-bold text-fnblue">
-                          Lead
+                      <tr className="border-b border-foreground/10 hover:bg-fnblue/5">
+                        <td className="py-2.5 px-3">
+                          <span className="inline-flex rounded-full border border-fnblue/35 bg-fnblue/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-fnblue">
+                            Lead
+                          </span>
                         </td>
-                        <td className="py-2 pr-3">
+                        <td className="py-2.5 px-3 font-semibold">
                           {(teamType === "srm"
                             ? leadSrm.name
                             : leadNonSrm.name) || "-"}
                         </td>
-                        <td className="py-2 pr-3">{currentLeadId || "-"}</td>
+                        <td className="py-2.5 px-3 font-mono text-xs">
+                          {currentLeadId || "-"}
+                        </td>
                       </tr>
                       {currentMembers.map((member, idx) => (
                         <tr
                           key={`${getCurrentMemberId(member)}-${idx}`}
-                          className="border-b border-foreground/10"
+                          className="border-b border-foreground/10 hover:bg-fnblue/5 last:border-b-0"
                         >
-                          <td className="py-2 pr-3">M{idx + 1}</td>
-                          <td className="py-2 pr-3">{member.name}</td>
-                          <td className="py-2 pr-3">
+                          <td className="py-2.5 px-3">
+                            <span className="inline-flex rounded-full border border-fnorange/35 bg-fnorange/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-fnorange">
+                              M{idx + 1}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold">
+                            {member.name}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono text-xs">
                             {getCurrentMemberId(member)}
                           </td>
                         </tr>
@@ -1663,7 +1947,18 @@ export default function TeamDashboardPage() {
                     Team Identity
                   </p>
                   <p className="mt-3 text-sm font-semibold">Team: {teamName}</p>
-                  <p className="text-sm font-semibold">Team ID: {teamId}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <p className="text-sm font-semibold">Team ID: {teamId}</p>
+                    <button
+                      type="button"
+                      aria-label="Copy Team ID"
+                      title="Copy Team ID"
+                      className={copyTeamIdButtonClass}
+                      onClick={copyTeamId}
+                    >
+                      <Copy size={14} strokeWidth={2.5} />
+                    </button>
+                  </div>
                   <p className="text-sm font-semibold">
                     Lead:{" "}
                     {(teamType === "srm" ? leadSrm.name : leadNonSrm.name) ||
@@ -1848,14 +2143,23 @@ export default function TeamDashboardPage() {
                     <p className="text-sm">
                       Size: {formatBytes(presentation.fileSizeBytes)}
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <FnButton
+                        type="button"
+                        tone="blue"
+                        onClick={() => setShowPresentationPreview(true)}
+                        disabled={!presentationPreviewUrl}
+                      >
+                        Preview Uploaded PPT
+                      </FnButton>
                       <FnButton asChild tone="gray">
                         <a
                           href={presentation.publicUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          View Uploaded PPT
+                          <ExternalLink size={16} strokeWidth={3} />
+                          Open in New Tab
                         </a>
                       </FnButton>
                     </div>
@@ -1889,6 +2193,79 @@ export default function TeamDashboardPage() {
           </section>
         ) : null}
       </div>
+
+      {showPresentationPreview && isPresentationSubmitted ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="presentation-preview-title"
+        >
+          <div className="flex h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-b-4 border-fnblue bg-background shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b border-foreground/10 px-4 py-3 md:px-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fnblue">
+                  Presentation Preview
+                </p>
+                <h3
+                  id="presentation-preview-title"
+                  className="mt-1 text-lg font-black uppercase tracking-tight md:text-xl"
+                >
+                  {presentation.fileName || "Uploaded PPT"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Close presentation preview"
+                onClick={() => setShowPresentationPreview(false)}
+                className="inline-flex size-8 items-center justify-center rounded-md border border-foreground/20 bg-white text-foreground/70 transition-colors hover:bg-fnblue/10 hover:text-fnblue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fnblue/40"
+              >
+                <X size={16} strokeWidth={2.6} />
+              </button>
+            </div>
+
+            <div className="relative flex-1 bg-slate-100">
+              {presentationPreviewUrl ? (
+                <iframe
+                  title="Uploaded team presentation preview"
+                  src={presentationPreviewUrl}
+                  className="h-full w-full"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center px-6 text-center text-sm text-foreground/75">
+                  Preview is unavailable for this file right now.
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-foreground/10 bg-white/85 px-4 py-3">
+              <p className="text-xs text-foreground/70">
+                If preview does not load, open the uploaded file directly.
+              </p>
+              <div className="flex gap-2">
+                <FnButton asChild tone="gray" size="sm">
+                  <a
+                    href={presentation.publicUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink size={16} strokeWidth={3} />
+                    Open in New Tab
+                  </a>
+                </FnButton>
+                <FnButton
+                  type="button"
+                  size="sm"
+                  onClick={() => setShowPresentationPreview(false)}
+                >
+                  Close
+                </FnButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showPresentationConfirm && pendingPresentationFile ? (
         <div
@@ -2079,10 +2456,12 @@ const HighlightTile = ({
 const MetricRow = ({
   label,
   value,
+  mono = false,
   noBorder = false,
 }: {
   label: string;
   value: string;
+  mono?: boolean;
   noBorder?: boolean;
 }) => (
   <div
@@ -2093,7 +2472,13 @@ const MetricRow = ({
     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/65">
       {label}
     </p>
-    <p className="text-sm font-black uppercase tracking-[0.06em] text-right">
+    <p
+      className={`text-right ${
+        mono
+          ? "font-mono text-xs"
+          : "text-sm font-black uppercase tracking-[0.06em]"
+      }`}
+    >
       {value}
     </p>
   </div>

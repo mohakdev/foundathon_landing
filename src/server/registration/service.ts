@@ -65,6 +65,42 @@ const isRlsViolationError = (message: string | undefined) =>
   typeof message === "string" &&
   message.toLowerCase().includes("row-level security policy");
 
+const isStorageAlreadyExistsError = (message: string | undefined) =>
+  typeof message === "string" &&
+  /already exists|resource already exists|duplicate/i.test(message);
+
+const isStorageObjectMissingError = (message: string | undefined) =>
+  typeof message === "string" &&
+  /not found|404|object does not exist|resource was not found/i.test(message);
+
+const didPublicPresentationRequestIndicateMissing = async (
+  publicUrl: string,
+) => {
+  const normalizedUrl = publicUrl.trim();
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(normalizedUrl, {
+      cache: "no-store",
+      method: "HEAD",
+    });
+
+    if (response.ok) {
+      return false;
+    }
+
+    if (response.status === 404 || response.status === 410) {
+      return true;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 const PROBLEM_STATEMENT_DETAIL_KEYS = [
   "problemStatementId",
   "problemStatementTitle",
@@ -80,6 +116,148 @@ const PRESENTATION_DETAIL_KEYS = [
   "presentationMimeType",
   "presentationFileSizeBytes",
 ] as const;
+
+const getDetailsRecord = (details: unknown) =>
+  details && typeof details === "object"
+    ? (details as Record<string, unknown>)
+    : {};
+
+const hasPresentationMetadata = (details: Record<string, unknown>) =>
+  PRESENTATION_DETAIL_KEYS.some((key) => {
+    const value = details[key];
+
+    if (typeof value === "string") {
+      return value.trim().length > 0;
+    }
+
+    return (
+      key === "presentationFileSizeBytes" &&
+      typeof value === "number" &&
+      Number.isInteger(value) &&
+      value > 0
+    );
+  });
+
+const clearPresentationMetadata = (details: Record<string, unknown>) => {
+  const nextDetails = { ...details };
+  for (const key of PRESENTATION_DETAIL_KEYS) {
+    delete nextDetails[key];
+  }
+
+  return nextDetails;
+};
+
+const splitStoragePath = (storagePath: string) => {
+  const normalizedPath = storagePath.trim().replace(/^\/+/, "");
+  const lastSlash = normalizedPath.lastIndexOf("/");
+
+  if (lastSlash <= 0 || lastSlash === normalizedPath.length - 1) {
+    return null;
+  }
+
+  return {
+    directory: normalizedPath.slice(0, lastSlash),
+    fileName: normalizedPath.slice(lastSlash + 1),
+  };
+};
+
+const syncDeletedPresentationMetadata = async ({
+  row,
+  supabase,
+  teamId,
+  userId,
+}: {
+  row: RegistrationRow;
+  supabase: RouteSupabaseClient;
+  teamId: string;
+  userId: string;
+}) => {
+  if (!supabase.storage?.from) {
+    return row;
+  }
+
+  const existingDetails = getDetailsRecord(row.details);
+  if (!hasPresentationMetadata(existingDetails)) {
+    return row;
+  }
+
+  const storagePath =
+    typeof existingDetails.presentationStoragePath === "string"
+      ? existingDetails.presentationStoragePath
+      : "";
+  const presentationPublicUrl =
+    typeof existingDetails.presentationPublicUrl === "string"
+      ? existingDetails.presentationPublicUrl
+      : "";
+  const parsedPath = splitStoragePath(storagePath);
+
+  let isObjectMissing = false;
+
+  if (!parsedPath) {
+    const isMissingByPublicUrl =
+      await didPublicPresentationRequestIndicateMissing(presentationPublicUrl);
+    if (!isMissingByPublicUrl) {
+      return row;
+    }
+    isObjectMissing = true;
+  }
+
+  if (parsedPath) {
+    const { data: storageEntries, error: storageListError } =
+      await supabase.storage
+        .from(PRESENTATION_BUCKET_NAME)
+        .list(parsedPath.directory, {
+          limit: 100,
+        });
+
+    if (
+      storageListError &&
+      !isStorageObjectMissingError(storageListError.message)
+    ) {
+      return row;
+    } else {
+      const isMissingByStorageList =
+        !!storageListError ||
+        !(storageEntries ?? []).some(
+          (entry) => entry.name === parsedPath.fileName,
+        );
+      if (!isMissingByStorageList) {
+        isObjectMissing = false;
+      } else {
+        const isMissingByPublicUrl =
+          await didPublicPresentationRequestIndicateMissing(
+            presentationPublicUrl,
+          );
+        if (!isMissingByPublicUrl) {
+          return row;
+        }
+        isObjectMissing = true;
+      }
+    }
+  }
+
+  if (!isObjectMissing) {
+    return row;
+  }
+
+  const clearedDetails = clearPresentationMetadata(existingDetails);
+  const { data: updatedData, error: updatedError } =
+    await updateRegistrationDetailsByTeamIdForUser({
+      details: clearedDetails,
+      supabase,
+      teamId,
+      userId,
+    });
+
+  if (updatedError || !updatedData) {
+    return {
+      ...row,
+      details: clearedDetails,
+    };
+  }
+
+  return updatedData as RegistrationRow;
+};
 
 type ServiceContext = {
   supabase: RouteSupabaseClient;
@@ -278,7 +456,13 @@ export const getTeam = async ({
     return fail("Team not found.", 404);
   }
 
-  const team = toTeamRecord(data as RegistrationRow);
+  const syncedRow = await syncDeletedPresentationMetadata({
+    row: data as RegistrationRow,
+    supabase,
+    teamId,
+    userId,
+  });
+  const team = toTeamRecord(syncedRow);
   if (!team) {
     return fail("Team data is incomplete or outdated.", 422);
   }
@@ -312,10 +496,13 @@ export const patchTeam = async ({
     return fail("Team not found.", 404);
   }
 
-  const existingDetails =
-    existingTeam.details && typeof existingTeam.details === "object"
-      ? (existingTeam.details as Record<string, unknown>)
-      : {};
+  const syncedExistingTeam = await syncDeletedPresentationMetadata({
+    row: existingTeam as RegistrationRow,
+    supabase,
+    teamId,
+    userId,
+  });
+  const existingDetails = getDetailsRecord(syncedExistingTeam.details);
   const existingStatementId = getProblemStatementIdFromDetails(existingDetails);
 
   const updatedDetails: Record<string, unknown> = {
@@ -502,10 +689,13 @@ export const submitTeamPresentation = async ({
     return fail("Team not found.", 404);
   }
 
-  const existingDetails =
-    existingTeam.details && typeof existingTeam.details === "object"
-      ? (existingTeam.details as Record<string, unknown>)
-      : {};
+  const syncedExistingTeam = await syncDeletedPresentationMetadata({
+    row: existingTeam as RegistrationRow,
+    supabase,
+    teamId: input.teamId,
+    userId,
+  });
+  const existingDetails = getDetailsRecord(syncedExistingTeam.details);
   const existingStatementId = getProblemStatementIdFromDetails(existingDetails);
 
   if (!existingStatementId) {
@@ -521,6 +711,7 @@ export const submitTeamPresentation = async ({
 
   const extension = getPresentationExtension(fileName);
   const storagePath = `${userId}/${input.teamId}/submission${extension}`;
+  const storage = supabase.storage.from(PRESENTATION_BUCKET_NAME);
   const { error: uploadError } = await supabase.storage
     .from(PRESENTATION_BUCKET_NAME)
     .upload(storagePath, file, {
@@ -536,12 +727,57 @@ export const submitTeamPresentation = async ({
       );
     }
 
+    if (isStorageAlreadyExistsError(uploadError.message)) {
+      const { data: publicUrlData } = storage.getPublicUrl(storagePath);
+      const existingFileName =
+        typeof existingDetails.presentationFileName === "string" &&
+        existingDetails.presentationFileName.trim().length > 0
+          ? existingDetails.presentationFileName
+          : fileName;
+      const existingMimeType =
+        typeof existingDetails.presentationMimeType === "string" &&
+        existingDetails.presentationMimeType.trim().length > 0
+          ? existingDetails.presentationMimeType
+          : file.type || "application/octet-stream";
+      const existingFileSize =
+        typeof existingDetails.presentationFileSizeBytes === "number" &&
+        Number.isInteger(existingDetails.presentationFileSizeBytes) &&
+        existingDetails.presentationFileSizeBytes > 0
+          ? existingDetails.presentationFileSizeBytes
+          : file.size;
+      const existingUploadedAt =
+        typeof existingDetails.presentationUploadedAt === "string" &&
+        existingDetails.presentationUploadedAt.trim().length > 0
+          ? existingDetails.presentationUploadedAt
+          : new Date().toISOString();
+      const presentationPublicUrl =
+        typeof existingDetails.presentationPublicUrl === "string" &&
+        existingDetails.presentationPublicUrl.trim().length > 0
+          ? existingDetails.presentationPublicUrl
+          : publicUrlData.publicUrl;
+
+      await updateRegistrationDetailsByTeamIdForUser({
+        details: {
+          ...existingDetails,
+          presentationFileName: existingFileName,
+          presentationFileSizeBytes: existingFileSize,
+          presentationMimeType: existingMimeType,
+          presentationPublicUrl,
+          presentationStoragePath: storagePath,
+          presentationUploadedAt: existingUploadedAt,
+        },
+        supabase,
+        teamId: input.teamId,
+        userId,
+      });
+
+      return fail("Presentation already submitted for this team.", 409);
+    }
+
     return fail(uploadError.message || "Failed to upload presentation.", 500);
   }
 
-  const { data: publicUrlData } = supabase.storage
-    .from(PRESENTATION_BUCKET_NAME)
-    .getPublicUrl(storagePath);
+  const { data: publicUrlData } = storage.getPublicUrl(storagePath);
 
   const presentationPublicUrl = publicUrlData.publicUrl;
   const updatedDetails: Record<string, unknown> = {

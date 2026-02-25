@@ -80,4 +80,14 @@ describe("toTeamRecord", () => {
     expect(team).not.toHaveProperty("presentationMimeType");
     expect(team).not.toHaveProperty("presentationFileSizeBytes");
   });
+
+  it("maps approval status from database enum value", () => {
+    const team = toTeamRecord({
+      ...baseRow,
+      is_approved: "Submitted",
+    });
+
+    expect(team).not.toBeNull();
+    expect(team?.approvalStatus).toBe("submitted");
+  });
 });
