@@ -688,7 +688,7 @@ const RegisterClient = () => {
       setIsRedirecting(true);
       isNavigating = true;
       startRouteProgress();
-      router.push(`/dashboard/${data.team.id}`);
+      router.push(`/dashboard/${data.team.id}?created=1`);
     } catch {
       setIsRedirecting(false);
       toast({

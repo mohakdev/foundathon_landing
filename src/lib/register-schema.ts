@@ -122,6 +122,17 @@ const problemStatementMetadataSchema = z
   })
   .partial();
 
+const presentationMetadataSchema = z
+  .object({
+    presentationFileName: z.string().trim().min(1),
+    presentationFileSizeBytes: z.number().int().positive(),
+    presentationMimeType: z.string().trim().min(1),
+    presentationPublicUrl: z.string().trim().min(1),
+    presentationStoragePath: z.string().trim().min(1),
+    presentationUploadedAt: z.string().trim().min(1),
+  })
+  .partial();
+
 export const teamRecordSchema = teamSubmissionSchema.and(
   z
     .object({
@@ -129,7 +140,8 @@ export const teamRecordSchema = teamSubmissionSchema.and(
       createdAt: z.string(),
       updatedAt: z.string(),
     })
-    .and(problemStatementMetadataSchema),
+    .and(problemStatementMetadataSchema)
+    .and(presentationMetadataSchema),
 );
 
 export const teamRecordListSchema = z.array(teamRecordSchema);

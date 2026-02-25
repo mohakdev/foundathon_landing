@@ -146,6 +146,13 @@ describe("/api/register/[teamId] route", () => {
           problemStatementId: "ps-01",
           problemStatementLockedAt: "2026-02-19T08:00:00.000Z",
           problemStatementTitle: "Campus Mobility Optimizer",
+          presentationFileName: "team-deck.pptx",
+          presentationFileSizeBytes: 1024,
+          presentationMimeType:
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          presentationPublicUrl: "https://example.com/public/team-deck.pptx",
+          presentationStoragePath: "user-1/team-id/submission.pptx",
+          presentationUploadedAt: "2026-02-20T08:00:00.000Z",
         },
       },
       error: null,
@@ -211,6 +218,13 @@ describe("/api/register/[teamId] route", () => {
           problemStatementId: "ps-01",
           problemStatementLockedAt: "2026-02-19T08:00:00.000Z",
           problemStatementTitle: "Campus Mobility Optimizer",
+          presentationFileName: "team-deck.pptx",
+          presentationFileSizeBytes: 1024,
+          presentationMimeType:
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          presentationPublicUrl: "https://example.com/public/team-deck.pptx",
+          presentationStoragePath: "user-1/team-id/submission.pptx",
+          presentationUploadedAt: "2026-02-20T08:00:00.000Z",
         }),
       }),
     );

@@ -146,6 +146,18 @@ export function toTeamRecord(row: RegistrationRow): TeamRecord | null {
   const problemStatementCap = toOptionalPositiveInteger(
     details.problemStatementCap,
   );
+  const presentationPublicUrl = toOptionalString(details.presentationPublicUrl);
+  const presentationStoragePath = toOptionalString(
+    details.presentationStoragePath,
+  );
+  const presentationUploadedAt = toOptionalString(
+    details.presentationUploadedAt,
+  );
+  const presentationFileName = toOptionalString(details.presentationFileName);
+  const presentationMimeType = toOptionalString(details.presentationMimeType);
+  const presentationFileSizeBytes = toOptionalPositiveInteger(
+    details.presentationFileSizeBytes,
+  );
 
   return {
     ...parsed.data,
@@ -156,5 +168,11 @@ export function toTeamRecord(row: RegistrationRow): TeamRecord | null {
     ...(problemStatementTitle ? { problemStatementTitle } : {}),
     ...(problemStatementLockedAt ? { problemStatementLockedAt } : {}),
     ...(problemStatementCap ? { problemStatementCap } : {}),
+    ...(presentationPublicUrl ? { presentationPublicUrl } : {}),
+    ...(presentationStoragePath ? { presentationStoragePath } : {}),
+    ...(presentationUploadedAt ? { presentationUploadedAt } : {}),
+    ...(presentationFileName ? { presentationFileName } : {}),
+    ...(presentationMimeType ? { presentationMimeType } : {}),
+    ...(presentationFileSizeBytes ? { presentationFileSizeBytes } : {}),
   };
 }
